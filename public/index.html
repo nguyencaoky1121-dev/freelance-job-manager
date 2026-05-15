@@ -718,51 +718,195 @@
 
     // Actions
     async function approveJob(jobId) {
-      await callAPI(`POST /api/jobs/${jobId}/approve`, {});
-      loadJobs();
-      loadJobDetails(jobId);
+      const job = selectedJob;
+      const analysis = job.analysis || {};
+
+      // Show confirmation
+      const confirmed = confirm(`Send proposal for $${analysis.recommendedBid || job.budget}?`);
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/actions/send-proposal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId: job.id,
+            projectId: job.external_id,
+            amount: analysis.recommendedBid || job.budget,
+            period: 7,
+            proposal: analysis.proposal || 'Professional design services',
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showNotif('✅ Proposal sent to Freelancer!', 'success');
+          loadJobs();
+          loadJobDetails(jobId);
+        } else {
+          showNotif(`❌ ${data.error || data.message}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
     }
 
     async function acceptJob(jobId) {
-      await callAPI(`POST /api/jobs/${jobId}/accept`, {});
-      loadJobDetails(jobId);
+      const job = selectedJob;
+      const msg = `Thank you for choosing me! I'm excited to work on your project. I'll start right away and keep you updated on progress.`;
+
+      const confirmed = confirm('Send acceptance message?');
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/actions/send-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId: job.id,
+            threadId: job.external_id, // Use project ID as thread
+            message: msg,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showNotif('✅ Acceptance message sent!', 'success');
+          await run(
+            'UPDATE jobs SET status = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?',
+            ['ACCEPTED', jobId]
+          );
+          loadJobDetails(jobId);
+        } else {
+          showNotif(`❌ ${data.error || data.message}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
     }
 
     async function startWork(jobId) {
-      await callAPI(`POST /api/jobs/${jobId}/start-work`, {});
-      showNotif('✅ Design generated!', 'success');
-      loadJobDetails(jobId);
+      const confirmed = confirm('Start work and generate design?');
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/jobs/${jobId}/start-work`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showNotif('✅ Design generated! Ready to submit.', 'success');
+          loadJobDetails(jobId);
+        } else {
+          showNotif(`❌ ${data.error}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
     }
 
     async function submitJob(jobId) {
-      await callAPI(`POST /api/jobs/${jobId}/submit-deliverable`, { deliverable_url: 'https://example.com/design.zip' });
-      loadJobDetails(jobId);
+      const job = selectedJob;
+      const msg = `I've completed your design and uploaded it for your review!\n\nPlease review and let me know if you'd like any revisions. Once you're satisfied, please release the payment so we can complete the project.\n\nThank you!`;
+
+      const confirmed = confirm('Submit deliverable and send message?');
+      if (!confirmed) return;
+
+      try {
+        // Submit deliverable
+        const res1 = await fetch(`${API_BASE}/actions/submit-deliverable`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId: job.id,
+            projectId: job.external_id,
+            bidId: job.external_id,
+            deliverableUrl: 'https://example.com/design.zip',
+            description: 'Professional design - ready for review',
+          }),
+        });
+
+        const data1 = await res1.json();
+
+        // Send message
+        const res2 = await fetch(`${API_BASE}/actions/send-message`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId: job.id,
+            threadId: job.external_id,
+            message: msg,
+          }),
+        });
+
+        const data2 = await res2.json();
+
+        if (data1.success && data2.success) {
+          showNotif('✅ Deliverable submitted!', 'success');
+          loadJobDetails(jobId);
+        } else {
+          showNotif(`❌ ${data1.error || data2.error}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
     }
 
     async function requestPayment(jobId) {
       const job = selectedJob;
-      await callAPI(`POST /api/jobs/${jobId}/request-payment`, { amount: job.budget * 0.8, paymentMethod: 'PayPal' });
-      loadJobDetails(jobId);
+      const amount = job.budget * 0.8;
+
+      const confirmed = confirm(`Request payment of $${amount}?`);
+      if (!confirmed) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/actions/request-payment`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId: job.id,
+            projectId: job.external_id,
+            bidId: job.external_id,
+            amount: amount,
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showNotif(`✅ Payment request sent! ($${amount})`, 'success');
+          loadJobDetails(jobId);
+        } else {
+          showNotif(`❌ ${data.error || data.message}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
     }
 
     async function confirmPayment(jobId) {
       const amount = document.getElementById(`amount_${jobId}`)?.value || selectedJob.budget * 0.8;
-      await callAPI(`POST /api/jobs/${jobId}/confirm-payment`, { amount: parseFloat(amount) });
-      showNotif(`✅ Earned $${amount}!`, 'success');
-      loadJobs();
-      loadJobDetails(jobId);
-    }
 
-    async function callAPI(endpoint, body) {
+      const confirmed = confirm(`Confirm payment of $${amount}?`);
+      if (!confirmed) return;
+
       try {
-        const [method, path] = endpoint.split(' ');
-        const res = await fetch(API_BASE + path, {
-          method,
+        const res = await fetch(`${API_BASE}/jobs/${jobId}/confirm-payment`, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
+          body: JSON.stringify({ amount: parseFloat(amount) }),
         });
+
         const data = await res.json();
-        if (!data.success) showNotif(`❌ ${data.error}`, 'error');
+        if (data.success) {
+          showNotif(`✅ Earned $${amount}! Job completed!`, 'success');
+          loadJobs();
+          loadJobDetails(jobId);
+        } else {
+          showNotif(`❌ ${data.error}`, 'error');
+        }
       } catch (e) {
         showNotif(`❌ ${e.message}`, 'error');
       }

@@ -8,6 +8,7 @@ const jobRoutes = require('./routes/jobs');
 const freelancerRoutes = require('./routes/freelancer');
 const messageRoutes = require('./routes/messages');
 const statsRoutes = require('./routes/stats');
+const actionsRoutes = require('./routes/actions');
 const { JobScanner } = require('./services/jobScanner');
 
 const app = express();
@@ -24,6 +25,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/actions', actionsRoutes);
 
 // Serve frontend (for all routes not matched)
 app.use((req, res) => {

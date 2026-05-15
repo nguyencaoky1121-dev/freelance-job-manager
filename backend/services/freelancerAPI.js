@@ -118,6 +118,8 @@ async function getProjectDetails(projectId) {
  */
 async function placeBid(projectId, amount, period, description) {
   try {
+    console.log(`💼 Placing bid on project ${projectId}: $${amount}`);
+
     const response = await apiClient.post('/projects/0.1/bids/', {
       project_id: projectId,
       amount: amount,
@@ -128,10 +130,100 @@ async function placeBid(projectId, amount, period, description) {
     return {
       success: true,
       bid: response.data.result,
+      message: `✅ Bid placed: $${amount}`,
     };
   } catch (error) {
     console.error(`❌ Error placing bid on project ${projectId}:`, error.message);
-    return { success: false, error: error.message };
+    return {
+      success: false,
+      error: error.message,
+      message: `Failed to place bid: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Send message to project thread
+ */
+async function sendMessage(threadId, message) {
+  try {
+    console.log(`💬 Sending message to thread ${threadId}`);
+
+    const response = await apiClient.post('/messages/0.1/messages/', {
+      thread_id: threadId,
+      message: message,
+    });
+
+    return {
+      success: true,
+      message: response.data.result,
+      status: '✅ Message sent',
+    };
+  } catch (error) {
+    console.error(`❌ Error sending message to thread ${threadId}:`, error.message);
+    return {
+      success: false,
+      error: error.message,
+      status: `Failed to send message: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Submit deliverable for a project
+ */
+async function submitDeliverable(projectId, bidId, files = [], description = '') {
+  try {
+    console.log(`📦 Submitting deliverable for project ${projectId}`);
+
+    const response = await apiClient.post('/projects/0.1/deliverables/', {
+      project_id: projectId,
+      bid_id: bidId,
+      files: files,
+      description: description,
+    });
+
+    return {
+      success: true,
+      deliverable: response.data.result,
+      status: '✅ Deliverable submitted',
+    };
+  } catch (error) {
+    console.error(`❌ Error submitting deliverable:`, error.message);
+    return {
+      success: false,
+      error: error.message,
+      status: `Failed to submit deliverable: ${error.message}`
+    };
+  }
+}
+
+/**
+ * Request milestone payment
+ */
+async function requestMilestone(projectId, bidId, amount, description) {
+  try {
+    console.log(`💰 Requesting milestone: $${amount} for project ${projectId}`);
+
+    const response = await apiClient.post('/projects/0.1/milestones/', {
+      project_id: projectId,
+      bid_id: bidId,
+      amount: amount,
+      description: description,
+    });
+
+    return {
+      success: true,
+      milestone: response.data.result,
+      status: '✅ Milestone requested',
+    };
+  } catch (error) {
+    console.error(`❌ Error requesting milestone:`, error.message);
+    return {
+      success: false,
+      error: error.message,
+      status: `Failed to request milestone: ${error.message}`
+    };
   }
 }
 
