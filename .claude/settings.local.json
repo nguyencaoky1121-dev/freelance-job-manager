@@ -27,7 +27,8 @@
       "Bash(curl -s http://localhost:3000/api/jobs?limit=1)",
       "Bash(git commit -m 'Add semi-auto actions - send proposals, messages, deliverables, payment requests *)",
       "Bash(git commit -m 'Fix: Replace sqlite3 with better-sqlite3 for Railway compatibility *)",
-      "Bash(git commit -m 'Fix: Auto-detect API base URL for Railway deployment *)"
+      "Bash(git commit -m 'Fix: Auto-detect API base URL for Railway deployment *)",
+      "Bash(git commit -m 'Rewrite dashboard UI - fix action buttons display *)"
     ]
   }
 }

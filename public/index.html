@@ -5,34 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Freelance Job Manager - Kiếm Tiền Online</title>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      color: #333;
+      padding: 20px;
     }
 
     .container {
-      display: grid;
-      grid-template-columns: 1fr 1.5fr 1fr;
-      gap: 20px;
-      padding: 20px;
-      max-width: 1800px;
+      max-width: 1400px;
       margin: 0 auto;
-      height: 100vh;
-      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 20px;
+      height: calc(100vh - 40px);
     }
 
     .panel {
       background: white;
       border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -42,13 +35,11 @@
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
       padding: 20px;
-      font-size: 18px;
       font-weight: 600;
+      font-size: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
     }
 
     .panel-content {
@@ -57,115 +48,45 @@
       padding: 20px;
     }
 
-    /* ===== JOB CARD ===== */
-    .job-card {
+    .job-item {
       background: #f8f9fa;
       border: 2px solid #e9ecef;
       border-radius: 8px;
       padding: 15px;
       margin-bottom: 15px;
       cursor: pointer;
-      transition: all 0.3s ease;
+      transition: all 0.3s;
     }
 
-    .job-card:hover {
-      border-color: #667eea;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-      transform: translateY(-2px);
-    }
+    .job-item:hover { border-color: #667eea; transform: translateY(-2px); }
+    .job-item.active { border-color: #667eea; background: #f0f4ff; }
 
-    .job-card.selected {
-      border-color: #667eea;
-      background: #f0f4ff;
-    }
+    .job-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
+    .job-meta { display: flex; gap: 10px; font-size: 12px; color: #666; margin-bottom: 8px; }
+    .job-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #cfe2ff; color: #084298; }
+    .job-budget { color: #28a745; font-weight: 600; }
 
-    .job-title {
+    button {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
       font-weight: 600;
-      font-size: 16px;
-      margin-bottom: 8px;
-      color: #333;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.3s;
     }
 
-    .job-meta {
-      display: flex;
-      gap: 10px;
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 10px;
-      flex-wrap: wrap;
-    }
+    button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 12px;
-    }
+    .btn-primary { background: #667eea; color: white; }
+    .btn-primary:hover:not(:disabled) { background: #5568d3; }
 
-    .status-ANALYZED { background: #cfe2ff; color: #084298; }
-    .status-APPROVED { background: #e2e3e5; color: #383d41; }
-    .status-ACCEPTED { background: #d1e7dd; color: #0f5132; }
-    .status-IN_PROGRESS { background: #fff3cd; color: #664d03; }
-    .status-SUBMITTED { background: #ffeae6; color: #842029; }
-    .status-PAYMENT_REQUESTED { background: #cfe2ff; color: #084298; }
-    .status-COMPLETED { background: #d1e7dd; color: #0f5132; }
+    .btn-success { background: #28a745; color: white; flex: 1; }
+    .btn-success:hover:not(:disabled) { background: #218838; }
 
-    .job-budget {
-      color: #28a745;
-      font-weight: 600;
-    }
+    .btn-secondary { background: #6c757d; color: white; }
 
-    /* ===== WORKFLOW TIMELINE ===== */
-    .workflow-timeline {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 30px;
-      position: relative;
-    }
-
-    .timeline-step {
-      flex: 1;
-      text-align: center;
-      position: relative;
-    }
-
-    .timeline-step.active .timeline-dot {
-      background: #28a745;
-      box-shadow: 0 0 0 4px #d1e7dd;
-    }
-
-    .timeline-step.pending .timeline-dot {
-      background: #ccc;
-    }
-
-    .timeline-dot {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      background: #e9ecef;
-      margin: 0 auto 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 12px;
-      transition: all 0.3s ease;
-    }
-
-    .timeline-label {
-      font-size: 11px;
-      color: #666;
-      font-weight: 600;
-      line-height: 1.2;
-    }
-
-    .timeline-step.active .timeline-label {
-      color: #28a745;
-    }
-
-    /* ===== BUTTONS ===== */
     .button-group {
       display: flex;
       gap: 10px;
@@ -173,66 +94,6 @@
       flex-wrap: wrap;
     }
 
-    button {
-      padding: 10px 15px;
-      border: none;
-      border-radius: 6px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-size: 13px;
-      flex: 1;
-      min-width: 120px;
-    }
-
-    button:hover:not(:disabled) {
-      transform: translateY(-2px);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .btn-primary {
-      background: #667eea;
-      color: white;
-    }
-
-    .btn-primary:hover:not(:disabled) {
-      background: #5568d3;
-      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-success {
-      background: #28a745;
-      color: white;
-    }
-
-    .btn-success:hover:not(:disabled) {
-      background: #218838;
-      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
-    }
-
-    .btn-warning {
-      background: #ffc107;
-      color: #333;
-    }
-
-    .btn-warning:hover:not(:disabled) {
-      background: #ffb300;
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-
-    .btn-secondary:hover:not(:disabled) {
-      background: #5a6268;
-    }
-
-    /* ===== SECTIONS ===== */
     .section {
       background: #f8f9fa;
       border-radius: 8px;
@@ -240,145 +101,13 @@
       margin-bottom: 15px;
     }
 
-    .section-title {
-      font-weight: 600;
-      margin-bottom: 10px;
-      color: #333;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    .section-title { font-weight: 600; margin-bottom: 10px; color: #333; }
+    .section-item { font-size: 13px; color: #666; margin-bottom: 8px; line-height: 1.5; }
+    .section-item:before { content: "✓ "; color: #28a745; font-weight: 600; margin-right: 5px; }
 
-    .section-content {
-      font-size: 13px;
-      color: #666;
-      line-height: 1.6;
-    }
+    .empty { text-align: center; color: #999; padding: 40px 20px; }
+    .empty-icon { font-size: 48px; margin-bottom: 10px; }
 
-    .item-list {
-      list-style: none;
-    }
-
-    .item-list li {
-      padding: 8px 0;
-      font-size: 13px;
-      color: #666;
-      border-bottom: 1px solid #e9ecef;
-    }
-
-    .item-list li:last-child {
-      border-bottom: none;
-    }
-
-    .item-list li:before {
-      content: "✓ ";
-      color: #28a745;
-      font-weight: 600;
-      margin-right: 5px;
-    }
-
-    /* ===== STATS ===== */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    .stat-box {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-    }
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 5px;
-    }
-
-    .stat-label {
-      font-size: 11px;
-      opacity: 0.9;
-    }
-
-    /* ===== MESSAGES ===== */
-    .message-item {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 12px;
-      margin-bottom: 12px;
-      border-left: 4px solid #667eea;
-    }
-
-    .message-sender {
-      font-weight: 600;
-      font-size: 12px;
-      margin-bottom: 5px;
-      color: #333;
-    }
-
-    .message-content {
-      font-size: 12px;
-      color: #666;
-      margin-bottom: 8px;
-      line-height: 1.4;
-    }
-
-    .message-draft {
-      background: #fff3cd;
-      border-radius: 4px;
-      padding: 10px;
-      margin-top: 8px;
-      font-size: 11px;
-      color: #664d03;
-      border: 1px solid #ffc107;
-    }
-
-    .message-draft-label {
-      font-weight: 600;
-      margin-bottom: 5px;
-    }
-
-    .message-draft-text {
-      white-space: pre-wrap;
-      line-height: 1.3;
-      max-height: 120px;
-      overflow-y: auto;
-    }
-
-    /* ===== EMPTY STATE ===== */
-    .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: #999;
-    }
-
-    .empty-state-icon {
-      font-size: 48px;
-      margin-bottom: 10px;
-    }
-
-    /* ===== DESIGN PREVIEW ===== */
-    .design-preview {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 15px;
-      text-align: center;
-      margin-bottom: 15px;
-    }
-
-    .design-preview-img {
-      max-width: 100%;
-      max-height: 200px;
-      border-radius: 4px;
-      margin-bottom: 10px;
-      background: white;
-    }
-
-    /* ===== NOTIFICATIONS ===== */
     .notification {
       position: fixed;
       top: 20px;
@@ -386,149 +115,82 @@
       background: white;
       padding: 15px 20px;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       z-index: 1000;
       animation: slideIn 0.3s ease;
-      max-width: 300px;
     }
 
     .notification.success { border-left: 4px solid #28a745; }
     .notification.error { border-left: 4px solid #dc3545; }
-    .notification.info { border-left: 4px solid #667eea; }
 
     @keyframes slideIn {
-      from {
-        transform: translateX(400px);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
+      from { transform: translateX(400px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
 
-    /* ===== RESPONSIVE ===== */
-    @media (max-width: 1400px) {
-      .container {
-        grid-template-columns: 1fr;
-        height: auto;
-      }
-      .panel {
-        max-height: 600px;
-      }
-    }
-
-    input[type="number"] {
-      width: 100%;
-      padding: 8px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-
-    .loading {
-      text-align: center;
-      padding: 20px;
-      color: #999;
-    }
-
-    .spinner {
-      border: 3px solid #f3f3f3;
-      border-top: 3px solid #667eea;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 10px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @media (max-width: 1200px) {
+      .container { grid-template-columns: 1fr; height: auto; }
+      .panel { max-height: 600px; }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- Left: Job List -->
+    <!-- LEFT: Jobs List -->
     <div class="panel">
       <div class="panel-header">
-        <span>📋 Jobs</span>
+        📋 Jobs
         <button class="btn-primary" onclick="scanJobs()" style="flex: 0; padding: 8px 12px; font-size: 12px;">🔍 Scan</button>
       </div>
-      <div class="panel-content" id="jobList">
-        <div class="empty-state">
-          <div class="empty-state-icon">📭</div>
-          <p>Click "Scan" để tìm jobs</p>
-        </div>
+      <div class="panel-content" id="jobsList">
+        <div class="empty"><div class="empty-icon">📭</div><p>Click Scan to find jobs</p></div>
       </div>
     </div>
 
-    <!-- Center: Job Details & Workflow -->
+    <!-- CENTER: Job Details -->
     <div class="panel">
-      <div class="panel-header">
-        <span id="jobTitle">💼 Job Details</span>
-      </div>
+      <div class="panel-header">💼 Job Details</div>
       <div class="panel-content" id="jobDetails">
-        <div class="empty-state">
-          <div class="empty-state-icon">👈</div>
-          <p>Select a job to view details</p>
-        </div>
+        <div class="empty"><div class="empty-icon">👈</div><p>Select a job to view details</p></div>
       </div>
     </div>
 
-    <!-- Right: Status & Actions -->
+    <!-- RIGHT: Actions -->
     <div class="panel">
-      <div class="panel-header">🎯 Workflow</div>
-      <div class="panel-content" id="workflowPanel">
-        <div class="empty-state">
-          <div class="empty-state-icon">⏳</div>
-          <p>Select a job to track workflow</p>
-        </div>
+      <div class="panel-header">🎯 Actions</div>
+      <div class="panel-content" id="actionsPanel">
+        <div class="empty"><div class="empty-icon">⏳</div><p>Select a job</p></div>
       </div>
     </div>
   </div>
 
   <script>
-    // Auto-detect API base URL
-    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const API_BASE = isLocal ? 'http://localhost:3000/api' : `${window.location.origin}/api`;
-    const WS_URL = isLocal ? 'ws://localhost:3002' : `wss://${window.location.host}`;
+    // Auto-detect API URL
+    const API_BASE = window.location.hostname === 'localhost'
+      ? 'http://localhost:3000/api'
+      : `${window.location.protocol}//${window.location.host}/api`;
 
     let selectedJob = null;
     let jobs = [];
-    let ws = null;
 
-    console.log('🌐 API_BASE:', API_BASE);
-    console.log('📡 WS_URL:', WS_URL);
+    console.log('✅ API_BASE:', API_BASE);
 
-    // Connect WebSocket
-    function connectWebSocket() {
-      ws = new WebSocket(WS_URL);
-      ws.onopen = () => console.log('✅ WebSocket connected');
-      ws.onmessage = (e) => {
-        const data = JSON.parse(e.data);
-        if (data.type === 'NEW_JOB') {
-          jobs.unshift(data.job);
-          renderJobs();
-          showNotif(`🎉 ${data.job.title}`, 'info');
-        }
-      };
-      ws.onerror = () => console.error('WebSocket error');
-      ws.onclose = () => setTimeout(connectWebSocket, 3000);
-    }
-
-    // Scan jobs
+    // SCAN JOBS
     async function scanJobs() {
       const btn = event.target;
       btn.disabled = true;
       btn.textContent = '⏳ Scanning...';
+
       try {
         const res = await fetch(`${API_BASE}/jobs/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        showNotif(`✅ Found ${data.new} new jobs!`, 'success');
-        loadJobs();
+
+        if (data.success) {
+          showNotif(`✅ Found ${data.new} jobs!`, 'success');
+          await loadJobs();
+        } else {
+          showNotif(`❌ ${data.error}`, 'error');
+        }
       } catch (e) {
         showNotif(`❌ ${e.message}`, 'error');
       } finally {
@@ -537,218 +199,182 @@
       }
     }
 
-    // Load jobs
+    // LOAD JOBS
     async function loadJobs() {
       try {
         const res = await fetch(`${API_BASE}/jobs?limit=100`);
         const data = await res.json();
-        if (data.success) {
+        if (data.success && data.jobs.length > 0) {
           jobs = data.jobs;
           renderJobs();
         }
       } catch (e) {
-        console.error('Error:', e);
+        showNotif(`❌ ${e.message}`, 'error');
       }
     }
 
-    // Render jobs
+    // RENDER JOBS
     function renderJobs() {
-      const list = document.getElementById('jobList');
+      const list = document.getElementById('jobsList');
       if (jobs.length === 0) {
-        list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📭</div><p>No jobs yet</p></div>`;
+        list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No jobs</p></div>';
         return;
       }
+
       list.innerHTML = jobs.map(j => `
-        <div class="job-card ${selectedJob?.id === j.id ? 'selected' : ''}" onclick="selectJob('${j.id}')">
-          <div class="job-title">${j.title.substring(0, 20)}...</div>
+        <div class="job-item ${selectedJob?.id === j.id ? 'active' : ''}" onclick="selectJob('${j.id}')">
+          <div class="job-title">${j.title.substring(0, 25)}</div>
           <div class="job-meta">
             <span class="job-budget">💰 $${j.budget}</span>
-            <span class="badge status-${j.status}">${j.status}</span>
+            <span class="job-badge">${j.status}</span>
           </div>
         </div>
       `).join('');
     }
 
-    // Select job
-    async function selectJob(jobId) {
+    // SELECT JOB
+    function selectJob(jobId) {
       selectedJob = jobs.find(j => j.id === jobId);
       renderJobs();
-      loadJobDetails(jobId);
+      showJobDetails();
+      showActions();
     }
 
-    // Load job details
-    async function loadJobDetails(jobId) {
-      try {
-        const res = await fetch(`${API_BASE}/jobs/${jobId}`);
-        const data = await res.json();
-        if (data.success) {
-          renderJobDetails(data.job);
-          loadWorkflow(jobId);
-        }
-      } catch (e) {
-        console.error('Error:', e);
-      }
-    }
+    // SHOW JOB DETAILS
+    function showJobDetails() {
+      if (!selectedJob) return;
 
-    // Render job details
-    function renderJobDetails(job) {
-      const analysis = job.analysis || {};
-      const panel = document.getElementById('jobDetails');
-
-      let html = `
-        <div class="stats-grid">
-          <div class="stat-box"><div class="stat-value">$${job.budget}</div><div class="stat-label">Budget</div></div>
-          <div class="stat-box"><div class="stat-value">${analysis.complexity || 'N/A'}</div><div class="stat-label">Level</div></div>
-        </div>
-
+      const analysis = selectedJob.analysis || {};
+      const html = `
         <div class="section">
           <div class="section-title">📊 Analysis</div>
-          <ul class="item-list">
-            <li>Type: ${(analysis.categories || []).join(', ')}</li>
-            <li>Score: ${analysis.score || 0}/100</li>
-            <li>Time: ~${analysis.estimatedHours || 2}h</li>
-            <li>Bid: $${analysis.recommendedBid || job.budget}</li>
-          </ul>
+          <div class="section-item">Type: ${(analysis.categories || []).join(', ')}</div>
+          <div class="section-item">Complexity: ${analysis.complexity || 'N/A'}</div>
+          <div class="section-item">Score: ${analysis.score || 0}/100</div>
+          <div class="section-item">Time: ~${analysis.estimatedHours || 2}h</div>
+          <div class="section-item">Bid: $${analysis.recommendedBid || selectedJob.budget}</div>
         </div>
 
         <div class="section">
           <div class="section-title">💡 Approach</div>
-          <ul class="item-list">
-            ${(analysis.approach || []).map(a => `<li>${a}</li>`).join('')}
-          </ul>
+          ${(analysis.approach || []).map(a => `<div class="section-item">${a}</div>`).join('')}
         </div>
 
         <div class="section">
           <div class="section-title">📝 Proposal</div>
-          <div class="section-content" style="white-space: pre-wrap; max-height: 150px; overflow-y: auto;">${analysis.proposal || 'N/A'}</div>
+          <div style="font-size: 12px; color: #666; line-height: 1.5; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
+            ${analysis.proposal || 'N/A'}
+          </div>
         </div>
       `;
 
-      panel.innerHTML = html;
+      document.getElementById('jobDetails').innerHTML = html;
     }
 
-    // Load workflow
-    async function loadWorkflow(jobId) {
-      try {
-        const res = await fetch(`${API_BASE}/jobs/${jobId}/workflow`);
-        const data = res.ok ? await res.json() : null;
-        const job = selectedJob;
+    // SHOW ACTIONS
+    function showActions() {
+      if (!selectedJob) return;
 
-        if (!data || !data.success) {
-          renderWorkflowActions(job);
-          return;
-        }
-
-        const workflow = data.workflow;
-        const statuses = ['ANALYZED', 'APPROVED', 'ACCEPTED', 'IN_PROGRESS', 'SUBMITTED', 'PAYMENT_REQUESTED', 'COMPLETED'];
-        const currentIdx = statuses.indexOf(workflow.status);
-
-        let html = `
-          <div class="workflow-timeline" style="margin-bottom: 30px;">
-            ${statuses.map((s, i) => `
-              <div class="timeline-step ${i <= currentIdx ? 'active' : 'pending'}">
-                <div class="timeline-dot">${i + 1}</div>
-                <div class="timeline-label">${s.replace('_', ' ')}</div>
-              </div>
-            `).join('')}
-          </div>
-
-          <div class="section">
-            <div class="section-title">📌 Current Status</div>
-            <div class="section-content">${workflow.status}</div>
-          </div>
-
-          ${workflow.earnings ? `
-            <div class="section">
-              <div class="section-title">💰 Earnings</div>
-              <div class="section-content" style="font-size: 20px; color: #28a745; font-weight: 600;">$${workflow.earnings}</div>
-            </div>
-          ` : ''}
-        `;
-
-        html += renderWorkflowActions(job);
-        document.getElementById('workflowPanel').innerHTML = html;
-      } catch (e) {
-        console.error('Error:', e);
-      }
-    }
-
-    // Render workflow actions
-    function renderWorkflowActions(job) {
-      const status = job.status;
+      const status = selectedJob.status;
       let actions = '';
 
       if (status === 'ANALYZED') {
         actions = `
+          <div class="section">
+            <div class="section-title">✅ Ready to send proposal</div>
+            <div class="section-item">Amount: $${selectedJob.analysis?.recommendedBid || selectedJob.budget}</div>
+          </div>
           <div class="button-group">
-            <button class="btn-success" onclick="approveJob('${job.id}')">✅ Approve</button>
+            <button class="btn-success" onclick="approveJob('${selectedJob.id}')">✅ Send Proposal</button>
           </div>
         `;
       } else if (status === 'APPROVED') {
         actions = `
+          <div class="section">
+            <div class="section-title">🤝 Proposal sent!</div>
+            <div class="section-item">Waiting for client acceptance</div>
+          </div>
           <div class="button-group">
-            <button class="btn-success" onclick="acceptJob('${job.id}')">🤝 Accept Job</button>
+            <button class="btn-success" onclick="acceptJob('${selectedJob.id}')">🤝 Accept (Send Message)</button>
           </div>
         `;
       } else if (status === 'ACCEPTED') {
         actions = `
+          <div class="section">
+            <div class="section-title">🎨 Start Work</div>
+            <div class="section-item">AI will generate design automatically</div>
+          </div>
           <div class="button-group">
-            <button class="btn-success" onclick="startWork('${job.id}')">🎨 Start Work</button>
+            <button class="btn-success" onclick="startWork('${selectedJob.id}')">🎨 Start Work & Generate Design</button>
           </div>
         `;
       } else if (status === 'IN_PROGRESS') {
         actions = `
+          <div class="section">
+            <div class="section-title">📤 Submit Deliverable</div>
+            <div class="section-item">Design ready to submit</div>
+          </div>
           <div class="button-group">
-            <button class="btn-success" onclick="submitJob('${job.id}')">📤 Submit</button>
+            <button class="btn-success" onclick="submitJob('${selectedJob.id}')">📤 Submit Deliverable</button>
           </div>
         `;
       } else if (status === 'SUBMITTED') {
         actions = `
+          <div class="section">
+            <div class="section-title">💰 Request Payment</div>
+            <div class="section-item">Deliverable submitted, request milestone</div>
+          </div>
           <div class="button-group">
-            <button class="btn-success" onclick="requestPayment('${job.id}')">💰 Request Payment</button>
+            <button class="btn-success" onclick="requestPayment('${selectedJob.id}')">💰 Request Payment</button>
           </div>
         `;
       } else if (status === 'PAYMENT_REQUESTED') {
         actions = `
+          <div class="section">
+            <div class="section-title">💸 Confirm Payment Received</div>
+            <div class="section-item">Enter amount received:</div>
+            <input type="number" id="amount_${selectedJob.id}" placeholder="$50" value="${selectedJob.budget * 0.8}" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+          </div>
           <div class="button-group">
-            <input type="number" id="amount_${job.id}" placeholder="Amount received" style="flex: 1;">
-            <button class="btn-success" onclick="confirmPayment('${job.id}')" style="flex: 1; min-width: 100px;">✅ Confirm Paid</button>
+            <button class="btn-success" onclick="confirmPayment('${selectedJob.id}')">✅ Confirm Paid</button>
           </div>
         `;
       } else if (status === 'COMPLETED') {
-        actions = `<div class="section" style="background: #d1e7dd;"><div class="section-content" style="color: #0f5132;">✅ Job Completed!</div></div>`;
+        actions = `
+          <div class="section" style="background: #d1e7dd; border-radius: 8px; padding: 20px; text-align: center;">
+            <div style="font-size: 32px; margin-bottom: 10px;">🎉</div>
+            <div style="font-weight: 600; color: #0f5132; margin-bottom: 5px;">Job Completed!</div>
+            <div style="color: #0f5132;">Earnings: <strong>$${selectedJob.earnings}</strong></div>
+          </div>
+        `;
       }
 
-      return actions;
+      document.getElementById('actionsPanel').innerHTML = actions || '<div class="empty"><p>No actions available</p></div>';
     }
 
-    // Actions
+    // APPROVE JOB (SEND PROPOSAL)
     async function approveJob(jobId) {
-      const job = selectedJob;
-      const analysis = job.analysis || {};
-
-      // Show confirmation
-      const confirmed = confirm(`Send proposal for $${analysis.recommendedBid || job.budget}?`);
-      if (!confirmed) return;
+      if (!confirm(`Send proposal for $${selectedJob.analysis?.recommendedBid || selectedJob.budget}?`)) return;
 
       try {
         const res = await fetch(`${API_BASE}/actions/send-proposal`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            jobId: job.id,
-            projectId: job.external_id,
-            amount: analysis.recommendedBid || job.budget,
+            jobId,
+            projectId: selectedJob.external_id,
+            amount: selectedJob.analysis?.recommendedBid || selectedJob.budget,
             period: 7,
-            proposal: analysis.proposal || 'Professional design services',
+            proposal: selectedJob.analysis?.proposal || 'Professional design',
           }),
         });
 
         const data = await res.json();
         if (data.success) {
-          showNotif('✅ Proposal sent to Freelancer!', 'success');
-          loadJobs();
-          loadJobDetails(jobId);
+          showNotif('✅ Proposal sent!', 'success');
+          await loadJobs();
+          selectedJob = jobs.find(j => j.id === jobId);
+          showActions();
         } else {
           showNotif(`❌ ${data.error || data.message}`, 'error');
         }
@@ -757,43 +383,38 @@
       }
     }
 
+    // ACCEPT JOB
     async function acceptJob(jobId) {
-      const job = selectedJob;
-      const msg = `Thank you for choosing me! I'm excited to work on your project. I'll start right away and keep you updated on progress.`;
-
-      const confirmed = confirm('Send acceptance message?');
-      if (!confirmed) return;
+      if (!confirm('Send acceptance message?')) return;
 
       try {
         const res = await fetch(`${API_BASE}/actions/send-message`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            jobId: job.id,
-            threadId: job.external_id, // Use project ID as thread
-            message: msg,
+            jobId,
+            threadId: selectedJob.external_id,
+            message: `Thank you for choosing me! I'm excited to work on your project. I'll start right away!`,
           }),
         });
 
         const data = await res.json();
         if (data.success) {
-          showNotif('✅ Acceptance message sent!', 'success');
-          await run(
-            'UPDATE jobs SET status = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?',
-            ['ACCEPTED', jobId]
-          );
-          loadJobDetails(jobId);
+          showNotif('✅ Message sent!', 'success');
+          await loadJobs();
+          selectedJob = jobs.find(j => j.id === jobId);
+          showActions();
         } else {
-          showNotif(`❌ ${data.error || data.message}`, 'error');
+          showNotif(`❌ ${data.error}`, 'error');
         }
       } catch (e) {
         showNotif(`❌ ${e.message}`, 'error');
       }
     }
 
+    // START WORK
     async function startWork(jobId) {
-      const confirmed = confirm('Start work and generate design?');
-      if (!confirmed) return;
+      if (!confirm('Generate design?')) return;
 
       try {
         const res = await fetch(`${API_BASE}/jobs/${jobId}/start-work`, {
@@ -804,8 +425,10 @@
 
         const data = await res.json();
         if (data.success) {
-          showNotif('✅ Design generated! Ready to submit.', 'success');
-          loadJobDetails(jobId);
+          showNotif('✅ Design generated!', 'success');
+          await loadJobs();
+          selectedJob = jobs.find(j => j.id === jobId);
+          showActions();
         } else {
           showNotif(`❌ ${data.error}`, 'error');
         }
@@ -814,89 +437,71 @@
       }
     }
 
+    // SUBMIT JOB
     async function submitJob(jobId) {
-      const job = selectedJob;
-      const msg = `I've completed your design and uploaded it for your review!\n\nPlease review and let me know if you'd like any revisions. Once you're satisfied, please release the payment so we can complete the project.\n\nThank you!`;
-
-      const confirmed = confirm('Submit deliverable and send message?');
-      if (!confirmed) return;
+      if (!confirm('Submit deliverable?')) return;
 
       try {
-        // Submit deliverable
-        const res1 = await fetch(`${API_BASE}/actions/submit-deliverable`, {
+        const res = await fetch(`${API_BASE}/actions/submit-deliverable`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            jobId: job.id,
-            projectId: job.external_id,
-            bidId: job.external_id,
+            jobId,
+            projectId: selectedJob.external_id,
+            bidId: selectedJob.external_id,
             deliverableUrl: 'https://example.com/design.zip',
-            description: 'Professional design - ready for review',
           }),
         });
 
-        const data1 = await res1.json();
-
-        // Send message
-        const res2 = await fetch(`${API_BASE}/actions/send-message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobId: job.id,
-            threadId: job.external_id,
-            message: msg,
-          }),
-        });
-
-        const data2 = await res2.json();
-
-        if (data1.success && data2.success) {
-          showNotif('✅ Deliverable submitted!', 'success');
-          loadJobDetails(jobId);
+        const data = await res.json();
+        if (data.success) {
+          showNotif('✅ Submitted!', 'success');
+          await loadJobs();
+          selectedJob = jobs.find(j => j.id === jobId);
+          showActions();
         } else {
-          showNotif(`❌ ${data1.error || data2.error}`, 'error');
+          showNotif(`❌ ${data.error}`, 'error');
         }
       } catch (e) {
         showNotif(`❌ ${e.message}`, 'error');
       }
     }
 
+    // REQUEST PAYMENT
     async function requestPayment(jobId) {
-      const job = selectedJob;
-      const amount = job.budget * 0.8;
-
-      const confirmed = confirm(`Request payment of $${amount}?`);
-      if (!confirmed) return;
+      const amount = selectedJob.budget * 0.8;
+      if (!confirm(`Request $${amount}?`)) return;
 
       try {
         const res = await fetch(`${API_BASE}/actions/request-payment`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            jobId: job.id,
-            projectId: job.external_id,
-            bidId: job.external_id,
-            amount: amount,
+            jobId,
+            projectId: selectedJob.external_id,
+            bidId: selectedJob.external_id,
+            amount,
           }),
         });
 
         const data = await res.json();
         if (data.success) {
-          showNotif(`✅ Payment request sent! ($${amount})`, 'success');
-          loadJobDetails(jobId);
+          showNotif(`✅ Payment request sent!`, 'success');
+          await loadJobs();
+          selectedJob = jobs.find(j => j.id === jobId);
+          showActions();
         } else {
-          showNotif(`❌ ${data.error || data.message}`, 'error');
+          showNotif(`❌ ${data.error}`, 'error');
         }
       } catch (e) {
         showNotif(`❌ ${e.message}`, 'error');
       }
     }
 
+    // CONFIRM PAYMENT
     async function confirmPayment(jobId) {
       const amount = document.getElementById(`amount_${jobId}`)?.value || selectedJob.budget * 0.8;
-
-      const confirmed = confirm(`Confirm payment of $${amount}?`);
-      if (!confirmed) return;
+      if (!confirm(`Confirm $${amount}?`)) return;
 
       try {
         const res = await fetch(`${API_BASE}/jobs/${jobId}/confirm-payment`, {
@@ -907,9 +512,11 @@
 
         const data = await res.json();
         if (data.success) {
-          showNotif(`✅ Earned $${amount}! Job completed!`, 'success');
-          loadJobs();
-          loadJobDetails(jobId);
+          showNotif(`✅ Earned $${amount}!`, 'success');
+          await loadJobs();
+          selectedJob = jobs.find(j => j.id === jobId);
+          showDetails();
+          showActions();
         } else {
           showNotif(`❌ ${data.error}`, 'error');
         }
@@ -923,15 +530,11 @@
       notif.className = `notification ${type}`;
       notif.textContent = msg;
       document.body.appendChild(notif);
-      setTimeout(() => {
-        notif.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notif.remove(), 300);
-      }, 3000);
+      setTimeout(() => notif.remove(), 4000);
     }
 
-    // Init
+    // LOAD ON START
     window.addEventListener('load', () => {
-      connectWebSocket();
       loadJobs();
     });
   </script>
