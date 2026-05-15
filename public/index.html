@@ -491,11 +491,17 @@
   </div>
 
   <script>
-    const API_BASE = 'http://localhost:3000/api';
-    const WS_URL = 'ws://localhost:3002';
+    // Auto-detect API base URL
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const API_BASE = isLocal ? 'http://localhost:3000/api' : `${window.location.origin}/api`;
+    const WS_URL = isLocal ? 'ws://localhost:3002' : `wss://${window.location.host}`;
+
     let selectedJob = null;
     let jobs = [];
     let ws = null;
+
+    console.log('🌐 API_BASE:', API_BASE);
+    console.log('📡 WS_URL:', WS_URL);
 
     // Connect WebSocket
     function connectWebSocket() {
