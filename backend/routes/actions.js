@@ -23,6 +23,20 @@ router.post('/send-proposal', async (req, res) => {
       });
     }
 
+    // Check if already bid on this project
+    const existingBid = await get(
+      'SELECT id FROM jobs WHERE external_id = ? AND bid_placed = 1',
+      [String(projectId)]
+    );
+
+    if (existingBid) {
+      return res.status(409).json({
+        success: false,
+        error: 'Already bid on this project',
+        message: 'Bạn đã đặt giá thầu cho công việc này rồi',
+      });
+    }
+
     // Try to send bid via Freelancer API
     const bidResult = await placeBid(projectId, amount, period, proposal);
 
@@ -30,10 +44,10 @@ router.post('/send-proposal', async (req, res) => {
     if (!bidResult.success && bidResult.status === 401) {
       console.log('⚠️ API 401 - Using mock mode for testing');
 
-      // Update job status in database (mock mode)
+      // Update job status and mark as bid placed
       await run(
-        'UPDATE jobs SET status = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?',
-        ['APPROVED', jobId]
+        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, bid_amount = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?',
+        ['APPROVED', amount, jobId]
       );
 
       if (global.broadcast) {
@@ -53,10 +67,10 @@ router.post('/send-proposal', async (req, res) => {
     }
 
     if (bidResult.success) {
-      // Update job status
+      // Update job status and mark as bid placed
       await run(
-        'UPDATE jobs SET status = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?',
-        ['APPROVED', jobId]
+        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, bid_amount = ?, approved_at = CURRENT_TIMESTAMP WHERE id = ?',
+        ['APPROVED', amount, jobId]
       );
 
       if (global.broadcast) {
