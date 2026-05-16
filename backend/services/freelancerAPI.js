@@ -130,9 +130,9 @@ async function placeBid(projectId, amount, period, description) {
     console.log(`💼 Placing bid on project ${projectId}: $${amount}`);
 
     const response = await apiClient.post('/projects/0.1/bids/', {
-      project_id: projectId,
-      amount: amount,
-      period: period,
+      project_id: parseInt(projectId, 10),
+      amount: parseFloat(amount),
+      period: parseInt(period, 10),
       description: description,
     });
 
@@ -146,7 +146,8 @@ async function placeBid(projectId, amount, period, description) {
     return {
       success: false,
       error: error.message,
-      message: `Failed to place bid: ${error.message}`
+      message: `Failed to place bid: ${error.message}`,
+      status: error.response?.status,
     };
   }
 }
@@ -159,7 +160,7 @@ async function sendMessage(threadId, message) {
     console.log(`💬 Sending message to thread ${threadId}`);
 
     const response = await apiClient.post('/messages/0.1/messages/', {
-      thread_id: threadId,
+      thread_id: parseInt(threadId, 10),
       message: message,
     });
 
@@ -173,7 +174,8 @@ async function sendMessage(threadId, message) {
     return {
       success: false,
       error: error.message,
-      status: `Failed to send message: ${error.message}`
+      status: `Failed to send message: ${error.message}`,
+      status: error.response?.status,
     };
   }
 }
@@ -186,8 +188,8 @@ async function submitDeliverable(projectId, bidId, files = [], description = '')
     console.log(`📦 Submitting deliverable for project ${projectId}`);
 
     const response = await apiClient.post('/projects/0.1/deliverables/', {
-      project_id: projectId,
-      bid_id: bidId,
+      project_id: parseInt(projectId, 10),
+      bid_id: parseInt(bidId, 10),
       files: files,
       description: description,
     });
@@ -202,7 +204,8 @@ async function submitDeliverable(projectId, bidId, files = [], description = '')
     return {
       success: false,
       error: error.message,
-      status: `Failed to submit deliverable: ${error.message}`
+      status: `Failed to submit deliverable: ${error.message}`,
+      statusCode: error.response?.status,
     };
   }
 }
@@ -215,9 +218,9 @@ async function requestMilestone(projectId, bidId, amount, description) {
     console.log(`💰 Requesting milestone: $${amount} for project ${projectId}`);
 
     const response = await apiClient.post('/projects/0.1/milestones/', {
-      project_id: projectId,
-      bid_id: bidId,
-      amount: amount,
+      project_id: parseInt(projectId, 10),
+      bid_id: parseInt(bidId, 10),
+      amount: parseFloat(amount),
       description: description,
     });
 
@@ -231,7 +234,8 @@ async function requestMilestone(projectId, bidId, amount, description) {
     return {
       success: false,
       error: error.message,
-      status: `Failed to request milestone: ${error.message}`
+      status: `Failed to request milestone: ${error.message}`,
+      statusCode: error.response?.status,
     };
   }
 }
