@@ -135,6 +135,7 @@ async function placeBid(projectId, amount, period, description) {
       bidder_id: parseInt(USER_ID, 10),
       amount: parseFloat(amount),
       period: parseInt(period, 10),
+      milestone_percentage: 100,
       description: description,
     });
 
