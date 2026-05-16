@@ -1,5 +1,5 @@
-const { getThreads, getMessages, getProjectDetails } = require('./freelancerAPI');
-const { generateAutoReply } = require('./jobAnalyzer');
+const { getThreads, getMessages, getProjectDetails, searchContests } = require('./freelancerAPI');
+const { generateAutoReply, analyzeJob } = require('./jobAnalyzer');
 const { run, all, get } = require('../db/database');
 
 class JobMonitor {
@@ -186,6 +186,139 @@ class JobMonitor {
   }
 
   /**
+   * Auto-scan for contests and save to database
+   */
+  async autoScanContests() {
+    try {
+      console.log('🏆 Auto-scanning for contests...');
+
+      const userSkills = [
+        'PHP', 'Website Design', 'Graphic Design', 'HTML', 'WordPress',
+        'CSS', 'JavaScript', 'User Interface / IA', 'Python', 'Logo Design',
+        'Photoshop', 'Illustrator', 'Banner Design', 'PSD to HTML',
+        'Landing Pages', 'Web Development', 'Mobile App Development',
+        'Android', 'HTML5', 'Adobe InDesign'
+      ];
+
+      const designKeywords = [
+        'logo design', 'banner design', 'web design', 'flyer design',
+        'business card', 'social media design', 'brochure', 'poster',
+        'illustration', 'UI design', 'landing page', 'website design',
+        'graphic design', 'packaging design', 'brand identity'
+      ];
+
+      const { success, contests, total } = await searchContests({
+        keywords: designKeywords,
+        minBudget: 10,
+        maxBudget: 1000,
+        limit: 30,
+      });
+
+      if (!success) {
+        console.log('⚠️ Failed to fetch contests');
+        return { newContests: 0 };
+      }
+
+      let newContests = 0;
+      let autoQueued = 0;
+
+      for (const contest of contests) {
+        try {
+          // Check if already in database
+          const existing = await get(
+            'SELECT id FROM jobs WHERE external_id = ?',
+            [String(contest.id)]
+          );
+
+          if (existing) continue;
+
+          // Check if contest matches user skills
+          const contestSkills = (contest.jobs || []).map(j => j.name || '');
+          const hasMatchingSkill = contestSkills.some(cs =>
+            userSkills.some(us => us.toLowerCase() === cs.toLowerCase())
+          );
+
+          if (!hasMatchingSkill && contestSkills.length > 0) continue;
+
+          // Analyze job
+          const analysis = analyzeJob({
+            title: contest.title || '',
+            description: contest.preview_description || contest.description || '',
+            budget: contest.budget?.maximum || contest.budget?.minimum || 0,
+          });
+
+          // Force job type to contest
+          analysis.jobType = {
+            type: 'contest',
+            isContest: true,
+            isFixed: false,
+            recommendation: 'Cuộc thi - Tự động phát hiện & sẵn sàng tham gia'
+          };
+
+          const jobId = `contest_${contest.id}_${Date.now()}`;
+          const budget = contest.budget?.maximum || contest.budget?.minimum || 0;
+
+          await run(
+            `INSERT INTO jobs (id, platform, external_id, title, description, budget, currency, skills, status, analysis, is_contest, contest_prize, client_name, client_id, project_url, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+            [
+              jobId,
+              'freelancer',
+              String(contest.id),
+              contest.title || 'Untitled Contest',
+              contest.preview_description || contest.description || '',
+              budget,
+              contest.currency?.code || 'USD',
+              JSON.stringify(contestSkills),
+              'CONTEST_READY',
+              JSON.stringify(analysis),
+              1,
+              budget,
+              contest.owner?.username || 'Unknown',
+              String(contest.owner?.id || ''),
+              `https://www.freelancer.com/contest/${contest.seo_url || contest.id}`,
+            ]
+          );
+
+          newContests++;
+          autoQueued++;
+
+          // Broadcast to dashboard
+          if (global.broadcast) {
+            global.broadcast({
+              type: 'NEW_CONTEST',
+              contest: {
+                id: jobId,
+                title: contest.title,
+                budget: budget,
+                skills: contestSkills,
+                client: contest.owner?.username,
+                url: `https://www.freelancer.com/contest/${contest.seo_url || contest.id}`,
+                analysis,
+              },
+            });
+          }
+
+          console.log(`🏆 New contest found: ${contest.title} ($${budget})`);
+        } catch (err) {
+          console.error(`❌ Error processing contest ${contest.id}:`, err.message);
+        }
+      }
+
+      if (newContests > 0) {
+        console.log(`✅ Found ${newContests} new contests (${autoQueued} queued)`);
+      } else {
+        console.log('ℹ️ No new contests found');
+      }
+
+      return { newContests, autoQueued, totalScanned: contests.length };
+    } catch (err) {
+      console.error('❌ Error scanning contests:', err.message);
+      return { newContests: 0, error: err.message };
+    }
+  }
+
+  /**
    * Run full monitoring cycle
    */
   async runMonitoringCycle() {
@@ -206,9 +339,12 @@ class JobMonitor {
       // Check for job awards
       const { newAwards } = await this.checkJobAwards();
 
+      // Auto-scan for contests
+      const { newContests } = await this.autoScanContests();
+
       this.lastCheckTime = new Date();
 
-      console.log(`✅ Monitoring cycle complete: ${newMessages} messages, ${newAwards} awards\n`);
+      console.log(`✅ Monitoring cycle complete: ${newMessages} messages, ${newAwards} awards, ${newContests} contests\n`);
 
       // Broadcast monitoring status
       if (global.broadcast) {
@@ -217,6 +353,7 @@ class JobMonitor {
           timestamp: this.lastCheckTime,
           newMessages,
           newAwards,
+          newContests,
           checkCount: this.checkCount,
         });
       }

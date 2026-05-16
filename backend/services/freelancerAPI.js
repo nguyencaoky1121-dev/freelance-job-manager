@@ -49,6 +49,84 @@ apiClient.interceptors.response.use(
 // ============ PROJECTS / JOBS ============
 
 /**
+ * Search for contests on Freelancer.com
+ */
+async function searchContests(options = {}) {
+  const {
+    keywords = ['logo design', 'banner design', 'web design', 'flyer design', 'brochure', 'business card', 'social media design', 'UI design', 'illustration'],
+    minBudget = 10,
+    maxBudget = 500,
+    limit = 50,
+    offset = 0,
+  } = options;
+
+  try {
+    const params = {
+      'query': keywords.join(' OR '),
+      'min_avg_price': minBudget,
+      'max_avg_price': maxBudget,
+      'limit': limit,
+      'offset': offset,
+      'sort_field': 'time_updated',
+      'project_types[]': ['contest'],
+      'compact': true,
+      'job_details': true,
+      'user_details': true,
+      'project_statuses[]': ['active'],
+    };
+
+    const response = await apiClient.get('/projects/0.1/projects/active/', { params });
+
+    if (response.data && response.data.result) {
+      return {
+        success: true,
+        contests: response.data.result.projects || [],
+        total: response.data.result.total_count || 0,
+      };
+    }
+
+    return { success: true, contests: [], total: 0 };
+  } catch (error) {
+    console.error('❌ Error searching contests:', error.message);
+    return {
+      success: false,
+      error: error.message,
+      contests: [],
+      total: 0,
+    };
+  }
+}
+
+/**
+ * Submit contest entry
+ */
+async function submitContestEntry(projectId, description = '', files = []) {
+  try {
+    console.log(`🏆 Submitting contest entry for project ${projectId}`);
+
+    const response = await apiClient.post('/projects/0.1/contest-entries/', {
+      project_id: parseInt(projectId, 10),
+      description: description,
+      files: files,
+    });
+
+    return {
+      success: true,
+      entry: response.data.result,
+      message: `✅ Contest entry submitted`,
+    };
+  } catch (error) {
+    console.error(`❌ Error submitting contest entry for project ${projectId}:`, error.message);
+    return {
+      success: false,
+      error: error.message,
+      message: `Failed to submit contest entry: ${error.message}`,
+      status: error.response?.status,
+    };
+  }
+}
+
+/**
  * Search for design projects on Freelancer.com
  */
 async function searchProjects(options = {}) {
@@ -351,8 +429,10 @@ async function getSelfProfile() {
 
 module.exports = {
   searchProjects,
+  searchContests,
   getProjectDetails,
   placeBid,
+  submitContestEntry,
   getMessages,
   sendMessage,
   getThreads,

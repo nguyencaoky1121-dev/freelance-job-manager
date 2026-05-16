@@ -9,6 +9,7 @@ const freelancerRoutes = require('./routes/freelancer');
 const messageRoutes = require('./routes/messages');
 const statsRoutes = require('./routes/stats');
 const actionsRoutes = require('./routes/actions');
+const contestRoutes = require('./routes/contests');
 const { router: monitorRoutes, monitor } = require('./routes/monitor');
 const { JobScanner } = require('./services/jobScanner');
 const { JobMonitor } = require('./services/jobMonitor');
@@ -28,6 +29,7 @@ app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/actions', actionsRoutes);
+app.use('/api/contests', contestRoutes);
 app.use('/api/monitor', monitorRoutes);
 
 // Serve frontend (for all routes not matched)
