@@ -53,7 +53,7 @@ apiClient.interceptors.response.use(
  */
 async function searchContests(options = {}) {
   const {
-    keywords = ['logo design', 'banner design', 'web design', 'flyer design', 'brochure', 'business card', 'social media design', 'UI design', 'illustration'],
+    keywords = ['logo design contest', 'banner design contest', 'web design contest', 'design contest', 'logo contest', 'banner contest', 'illustration contest', 'UI design contest'],
     minBudget = 10,
     maxBudget = 500,
     limit = 50,
@@ -68,7 +68,6 @@ async function searchContests(options = {}) {
       'limit': limit,
       'offset': offset,
       'sort_field': 'time_updated',
-      'project_types[]': ['contest'],
       'compact': true,
       'job_details': true,
       'user_details': true,
@@ -78,10 +77,21 @@ async function searchContests(options = {}) {
     const response = await apiClient.get('/projects/0.1/projects/active/', { params });
 
     if (response.data && response.data.result) {
+      // Filter for contests by checking description
+      const contests = (response.data.result.projects || []).filter(p => {
+        const desc = (p.preview_description || p.description || '').toLowerCase();
+        const title = (p.title || '').toLowerCase();
+        const combined = `${title} ${desc}`;
+
+        // Check for contest keywords
+        const contestKeywords = ['contest', 'competition', 'entries', 'winner', 'choose best', 'submit entries'];
+        return contestKeywords.some(kw => combined.includes(kw));
+      });
+
       return {
         success: true,
-        contests: response.data.result.projects || [],
-        total: response.data.result.total_count || 0,
+        contests: contests,
+        total: contests.length,
       };
     }
 
