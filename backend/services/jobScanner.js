@@ -12,10 +12,19 @@ class JobScanner {
   }
 
   /**
-   * Get user skills from Freelancer API
+   * Get user skills from environment or API
    */
   async getUserSkills() {
     try {
+      // First, try to get skills from .env
+      const envSkills = process.env.FREELANCER_USER_SKILLS;
+      if (envSkills) {
+        this.userSkills = envSkills.split(',').map(s => s.trim().toLowerCase());
+        console.log(`👤 User skills (from .env): ${this.userSkills.join(', ')}`);
+        return this.userSkills;
+      }
+
+      // Fallback: try to get from API
       const token = process.env.FREELANCER_OAUTH_TOKEN;
       const response = await axios.get('https://www.freelancer.com/api/users/0.1/users/self/', {
         headers: {
@@ -26,7 +35,7 @@ class JobScanner {
 
       const skills = response.data.result.skills || [];
       this.userSkills = skills.map(s => s.name.toLowerCase());
-      console.log(`👤 User skills: ${this.userSkills.join(', ')}`);
+      console.log(`👤 User skills (from API): ${this.userSkills.join(', ')}`);
       return this.userSkills;
     } catch (error) {
       console.error('❌ Error getting user skills:', error.message);
