@@ -122,6 +122,45 @@
 
     .notification.success { border-left: 4px solid #28a745; }
     .notification.error { border-left: 4px solid #dc3545; }
+    .notification.info { border-left: 4px solid #0dcaf0; }
+    .notification.warning { border-left: 4px solid #ffc107; }
+
+    .alert-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #dc3545;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .monitoring-status {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 12px;
+      color: #666;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #28a745;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
 
     @keyframes slideIn {
       from { transform: translateX(400px); opacity: 0; }
@@ -139,8 +178,10 @@
     <!-- LEFT: Jobs List -->
     <div class="panel">
       <div class="panel-header">
-        📋 Jobs
-        <button class="btn-primary" onclick="scanJobs()" style="flex: 0; padding: 8px 12px; font-size: 12px;">🔍 Scan</button>
+        📋 Jobs <span id="newJobsBadge" class="alert-badge" style="display: none;">0</span>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-primary" onclick="scanJobs()" style="flex: 0; padding: 8px 12px; font-size: 12px;">🔍 Scan</button>
+        </div>
       </div>
       <div class="panel-content" id="jobsList">
         <div class="empty"><div class="empty-icon">📭</div><p>Click Scan to find jobs</p></div>
@@ -149,7 +190,13 @@
 
     <!-- CENTER: Job Details -->
     <div class="panel">
-      <div class="panel-header">💼 Job Details</div>
+      <div class="panel-header">
+        💼 Job Details
+        <div class="monitoring-status">
+          <div class="status-dot" id="monitoringDot"></div>
+          <span id="monitoringStatus">Monitoring active</span>
+        </div>
+      </div>
       <div class="panel-content" id="jobDetails">
         <div class="empty"><div class="empty-icon">👈</div><p>Select a job to view details</p></div>
       </div>
@@ -157,7 +204,9 @@
 
     <!-- RIGHT: Actions -->
     <div class="panel">
-      <div class="panel-header">🎯 Actions</div>
+      <div class="panel-header">
+        🎯 Actions <span id="newMessagesBadge" class="alert-badge" style="display: none;">0</span>
+      </div>
       <div class="panel-content" id="actionsPanel">
         <div class="empty"><div class="empty-icon">⏳</div><p>Select a job</p></div>
       </div>
@@ -170,10 +219,115 @@
       ? 'http://localhost:3000/api'
       : `${window.location.protocol}//${window.location.host}/api`;
 
+    const WS_BASE = window.location.hostname === 'localhost'
+      ? 'ws://localhost:3001'
+      : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+
     let selectedJob = null;
     let jobs = [];
+    let newJobsCount = 0;
+    let newMessagesCount = 0;
+    let ws = null;
 
     console.log('✅ API_BASE:', API_BASE);
+    console.log('✅ WS_BASE:', WS_BASE);
+
+    // WEBSOCKET CONNECTION
+    function connectWebSocket() {
+      try {
+        ws = new WebSocket(WS_BASE);
+
+        ws.onopen = () => {
+          console.log('🔌 WebSocket connected');
+          updateMonitoringStatus(true);
+        };
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          handleWebSocketMessage(data);
+        };
+
+        ws.onerror = (error) => {
+          console.error('❌ WebSocket error:', error);
+          updateMonitoringStatus(false);
+        };
+
+        ws.onclose = () => {
+          console.log('🔌 WebSocket disconnected');
+          updateMonitoringStatus(false);
+          // Reconnect after 3 seconds
+          setTimeout(connectWebSocket, 3000);
+        };
+      } catch (err) {
+        console.error('❌ WebSocket connection failed:', err);
+        updateMonitoringStatus(false);
+      }
+    }
+
+    // HANDLE WEBSOCKET MESSAGES
+    function handleWebSocketMessage(data) {
+      console.log('📨 WebSocket message:', data.type);
+
+      if (data.type === 'NEW_JOB') {
+        newJobsCount++;
+        updateJobsBadge();
+        showNotif(`🎉 New job: ${data.job.title}`, 'info');
+        loadJobs();
+      } else if (data.type === 'NEW_MESSAGE') {
+        newMessagesCount++;
+        updateMessagesBadge();
+        showNotif(`💬 Message from ${data.message.sender}: ${data.message.content.substring(0, 50)}...`, 'info');
+        loadJobs();
+      } else if (data.type === 'JOB_AWARDED') {
+        showNotif(`🎉 Job awarded: ${data.job.title} ($${data.job.budget})`, 'success');
+        loadJobs();
+      } else if (data.type === 'PROPOSAL_SENT') {
+        showNotif(`✅ Proposal sent for $${data.amount}`, 'success');
+        loadJobs();
+      } else if (data.type === 'DELIVERABLE_SUBMITTED') {
+        showNotif(`📤 Deliverable submitted`, 'success');
+        loadJobs();
+      } else if (data.type === 'PAYMENT_REQUESTED') {
+        showNotif(`💰 Payment requested: $${data.amount}`, 'success');
+        loadJobs();
+      } else if (data.type === 'SCAN_COMPLETE') {
+        showNotif(`✅ Scan complete: ${data.results.new} new jobs`, 'success');
+      } else if (data.type === 'MONITORING_UPDATE') {
+        console.log(`📬 Monitoring: ${data.newMessages} messages, ${data.newAwards} awards`);
+      }
+    }
+
+    function updateMonitoringStatus(active) {
+      const dot = document.getElementById('monitoringDot');
+      const status = document.getElementById('monitoringStatus');
+      if (active) {
+        dot.style.background = '#28a745';
+        status.textContent = 'Monitoring active';
+      } else {
+        dot.style.background = '#dc3545';
+        status.textContent = 'Monitoring offline';
+      }
+    }
+
+    function updateJobsBadge() {
+      const badge = document.getElementById('newJobsBadge');
+      if (newJobsCount > 0) {
+        badge.textContent = newJobsCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+
+    function updateMessagesBadge() {
+      const badge = document.getElementById('newMessagesBadge');
+      if (newMessagesCount > 0) {
+        badge.textContent = newMessagesCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
 
     // SCAN JOBS
     async function scanJobs() {
@@ -535,6 +689,7 @@
 
     // LOAD ON START
     window.addEventListener('load', () => {
+      connectWebSocket();
       loadJobs();
     });
   </script>

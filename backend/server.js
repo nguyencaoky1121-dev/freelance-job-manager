@@ -9,7 +9,9 @@ const freelancerRoutes = require('./routes/freelancer');
 const messageRoutes = require('./routes/messages');
 const statsRoutes = require('./routes/stats');
 const actionsRoutes = require('./routes/actions');
+const { router: monitorRoutes, monitor } = require('./routes/monitor');
 const { JobScanner } = require('./services/jobScanner');
+const { JobMonitor } = require('./services/jobMonitor');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -26,6 +28,7 @@ app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/actions', actionsRoutes);
+app.use('/api/monitor', monitorRoutes);
 
 // Serve frontend (for all routes not matched)
 app.use((req, res) => {
@@ -79,8 +82,13 @@ async function start() {
 
     // Start job scanner (auto-scan)
     const scanner = new JobScanner();
-    const interval = parseInt(process.env.SCAN_INTERVAL) || 60000;
-    console.log(`🔍 Job scanner will run every ${interval / 1000}s`);
+    const scanInterval = parseInt(process.env.SCAN_INTERVAL) || 60000;
+    console.log(`🔍 Job scanner will run every ${scanInterval / 1000}s`);
+
+    // Start job monitor (auto-check for messages and awards)
+    const monitorInterval = parseInt(process.env.MONITOR_INTERVAL) || 120000;
+    monitor.startAutoMonitoring(monitorInterval);
+    console.log(`📬 Job monitor will run every ${monitorInterval / 1000}s`);
 
   } catch (err) {
     console.error('❌ Failed to start server:', err);
