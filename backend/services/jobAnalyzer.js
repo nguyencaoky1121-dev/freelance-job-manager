@@ -167,13 +167,14 @@ function estimateTime(complexity, categories) {
 function calculateRecommendedBid(budget, complexity) {
   if (!budget || budget <= 0) return 25;
 
-  // Use budget as minimum bid (Freelancer API returns minimum as budget)
-  // Add 10% markup for complexity
-  const multiplier = { easy: 1.0, medium: 1.1, hard: 1.2 };
-  const recommendedBid = Math.round(budget * (multiplier[complexity] || 1.1));
+  // Apply percentage markup based on complexity
+  // Easy: +5%, Medium: +7.5%, Hard: +10%
+  const markupPercentage = { easy: 0.05, medium: 0.075, hard: 0.10 };
+  const markup = markupPercentage[complexity] || 0.075;
 
-  // Ensure minimum of $25
-  return Math.max(25, recommendedBid);
+  const recommendedBid = Math.round(budget * (1 + markup));
+
+  return recommendedBid;
 }
 
 function calculateJobScore(job, complexity) {
