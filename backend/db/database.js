@@ -63,6 +63,8 @@ async function initDB() {
     bid_placed BOOLEAN DEFAULT 0,
     bid_placed_at DATETIME,
     bid_amount REAL DEFAULT 0,
+    is_contest BOOLEAN DEFAULT 0,
+    contest_prize REAL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     analyzed_at DATETIME,
     approved_at DATETIME,

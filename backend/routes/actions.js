@@ -248,6 +248,66 @@ router.post('/submit-deliverable', async (req, res) => {
 });
 
 /**
+ * POST /api/actions/submit-contest - Submit entry to contest
+ */
+router.post('/submit-contest', async (req, res) => {
+  try {
+    const { jobId, projectId, contestId, entryUrl, description } = req.body;
+
+    if (!projectId || !contestId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: projectId, contestId',
+      });
+    }
+
+    // Check if already submitted to this contest
+    const existingEntry = await get(
+      'SELECT id FROM jobs WHERE external_id = ? AND status IN (?, ?)',
+      [String(projectId), 'SUBMITTED', 'ACCEPTED']
+    );
+
+    if (existingEntry) {
+      return res.status(409).json({
+        success: false,
+        error: 'Already submitted to this contest',
+        message: 'Bạn đã submit entry cho cuộc thi này rồi',
+      });
+    }
+
+    // Mock mode - simulate contest submission
+    console.log('📝 Submitting contest entry:', { projectId, contestId, entryUrl });
+
+    await run(
+      'UPDATE jobs SET status = ?, deliverable_url = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?',
+      ['SUBMITTED', entryUrl || '', jobId]
+    );
+
+    if (global.broadcast) {
+      global.broadcast({
+        type: 'CONTEST_SUBMITTED',
+        job_id: jobId,
+        project_id: projectId,
+        contest_id: contestId,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: '✅ Contest entry submitted! Chờ khách hàng chọn entry tốt nhất',
+      entry: {
+        projectId,
+        contestId,
+        entryUrl,
+        submittedAt: new Date().toISOString(),
+      },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * POST /api/actions/request-payment - Request milestone payment
  */
 router.post('/request-payment', async (req, res) => {

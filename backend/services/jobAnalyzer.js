@@ -9,6 +9,9 @@ function analyzeJob(job) {
   const title = (job.title || '').toLowerCase();
   const combined = `${title} ${description}`;
 
+  // Determine job type (contest vs fixed price)
+  const jobType = detectJobType(job);
+
   // Determine category
   const categories = detectCategories(combined);
 
@@ -28,6 +31,7 @@ function analyzeJob(job) {
   const estimatedHours = estimateTime(complexity, categories);
 
   return {
+    jobType,
     categories,
     complexity,
     requirements,
@@ -167,9 +171,10 @@ function estimateTime(complexity, categories) {
 function calculateRecommendedBid(budget, complexity) {
   if (!budget || budget <= 0) return 25;
 
-  // Bid exactly at job budget for safety
-  // This avoids "minimum bid" errors while maintaining competitiveness
-  return Math.round(budget);
+  // Bid 15% higher than budget to increase win rate
+  // Higher bids attract clients looking for quality work
+  const bidMultiplier = 1.15;
+  return Math.round(budget * bidMultiplier);
 }
 
 function calculateJobScore(job, complexity) {
@@ -192,6 +197,41 @@ function calculateJobScore(job, complexity) {
   }
 
   return Math.min(100, Math.max(0, score));
+}
+
+/**
+ * Detect if job is a contest or fixed price
+ */
+function detectJobType(job) {
+  const description = (job.description || '').toLowerCase();
+  const title = (job.title || '').toLowerCase();
+  const combined = `${title} ${description}`;
+
+  // Contest keywords
+  const contestKeywords = ['contest', 'competition', 'design contest', 'submit', 'entries', 'multiple entries', 'choose best', 'winner', 'best design'];
+  const isContest = contestKeywords.some(kw => combined.includes(kw));
+
+  // Fixed price keywords
+  const fixedKeywords = ['fixed price', 'fixed-price', 'fixed project', 'hourly', 'per hour'];
+  const isFixed = fixedKeywords.some(kw => combined.includes(kw));
+
+  // If contest keywords found, it's a contest
+  if (isContest) {
+    return {
+      type: 'contest',
+      isContest: true,
+      isFixed: false,
+      recommendation: 'Tham gia cuộc thi - Cơ hội thắng cao hơn'
+    };
+  }
+
+  // Default to fixed price
+  return {
+    type: 'fixed',
+    isContest: false,
+    isFixed: true,
+    recommendation: 'Bid trực tiếp - Cạnh tranh với các freelancer khác'
+  };
 }
 
 /**
@@ -233,4 +273,5 @@ module.exports = {
   generateProposal,
   generateAutoReply,
   calculateJobScore,
+  detectJobType,
 };

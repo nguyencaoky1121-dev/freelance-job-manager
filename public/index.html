@@ -426,6 +426,9 @@
       if (!selectedJob) return;
 
       const analysis = selectedJob.analysis || {};
+      const jobType = analysis.jobType || {};
+      const isContest = jobType.isContest || false;
+
       const bidInfo = selectedJob.bid_placed
         ? `<div class="section" style="background: #d1e7dd; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
              <div class="section-title">✅ Đã Apply</div>
@@ -434,7 +437,13 @@
            </div>`
         : '';
 
+      const jobTypeInfo = `<div class="section" style="background: ${isContest ? '#fff3cd' : '#cfe2ff'}; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+        <div class="section-title">${isContest ? '🏆 Cuộc Thi' : '💼 Bid Trực Tiếp'}</div>
+        <div class="section-item">${jobType.recommendation || 'N/A'}</div>
+      </div>`;
+
       const html = `
+        ${jobTypeInfo}
         ${bidInfo}
         <div class="section">
           <div class="section-title">📊 Phân Tích</div>
@@ -466,6 +475,8 @@
       if (!selectedJob) return;
 
       const status = selectedJob.status;
+      const analysis = selectedJob.analysis || {};
+      const isContest = analysis.jobType?.isContest || false;
       let actions = '';
 
       // Nếu đã apply, hiển thị thông báo
@@ -485,13 +496,17 @@
           </div>
         `;
       } else if (status === 'ANALYZED') {
+        const buttonText = isContest ? '🏆 Tham Gia Cuộc Thi' : '✅ Gửi Đề Xuất';
+        const buttonAction = isContest ? `submitContest('${selectedJob.id}')` : `approveJob('${selectedJob.id}')`;
+
         actions = `
           <div class="section">
-            <div class="section-title">✅ Sẵn sàng gửi đề xuất</div>
+            <div class="section-title">${isContest ? '🏆 Tham Gia Cuộc Thi' : '✅ Sẵn sàng gửi đề xuất'}</div>
             <div class="section-item">Số tiền: $${selectedJob.analysis?.recommendedBid || selectedJob.budget}</div>
+            ${isContest ? '<div class="section-item" style="font-size: 11px; color: #666;">Tham gia cuộc thi - Cơ hội thắng cao hơn</div>' : ''}
           </div>
           <div class="button-group">
-            <button class="btn-success" onclick="approveJob('${selectedJob.id}')">✅ Gửi Đề Xuất</button>
+            <button class="btn-success" onclick="${buttonAction}">${buttonText}</button>
           </div>
         `;
       } else if (status === 'APPROVED') {
@@ -735,6 +750,38 @@
           showActions();
         } else {
           showNotif(`❌ ${data.error}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
+    }
+
+    // SUBMIT CONTEST ENTRY
+    async function submitContest(jobId) {
+      if (!confirm(`Tham gia cuộc thi với entry này?`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/actions/submit-contest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            jobId,
+            projectId: selectedJob.external_id,
+            contestId: selectedJob.external_id,
+            entryUrl: 'https://example.com/entry',
+            description: selectedJob.analysis?.proposal || 'Design entry',
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showNotif('✅ Entry submitted! Chờ khách hàng chọn entry tốt nhất', 'success');
+          await loadJobs();
+          selectedJob = jobs.find(j => j.id === jobId);
+          showJobDetails();
+          showActions();
+        } else {
+          showNotif(`❌ ${data.error || data.message}`, 'error');
         }
       } catch (e) {
         showNotif(`❌ ${e.message}`, 'error');
