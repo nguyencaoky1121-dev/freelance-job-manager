@@ -1,9 +1,11 @@
 const axios = require('axios');
 
 const API_BASE = process.env.FREELANCER_API_BASE || 'https://www.freelancer.com/api';
+const API_KEY = process.env.FREELANCER_API_KEY || '';
+const API_SECRET = process.env.FREELANCER_API_SECRET || '';
 const OAUTH_TOKEN = process.env.FREELANCER_OAUTH_TOKEN || '';
 
-// Freelancer API client
+// Freelancer API client with OAuth credentials
 const apiClient = axios.create({
   baseURL: API_BASE,
   headers: {
@@ -17,6 +19,7 @@ const apiClient = axios.create({
 // Add request interceptor for debugging
 apiClient.interceptors.request.use(config => {
   console.log(`📡 API Request: ${config.method.toUpperCase()} ${config.url}`);
+  if (API_KEY) console.log(`   Using API Key: ${API_KEY.substring(0, 8)}...`);
   return config;
 }, error => {
   console.error('❌ Request error:', error.message);
@@ -29,6 +32,12 @@ apiClient.interceptors.response.use(
   error => {
     if (error.response) {
       console.error(`❌ API Error ${error.response.status}:`, error.response.data?.message || error.response.statusText);
+      // Return error details for mock mode fallback
+      return Promise.reject({
+        ...error,
+        status: error.response.status,
+        message: error.response.data?.message || error.response.statusText,
+      });
     } else {
       console.error('❌ API Error:', error.message);
     }
