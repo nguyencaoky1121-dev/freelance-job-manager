@@ -1,16 +1,62 @@
 const { searchProjects, getProjectDetails, getThreads, getMessages } = require('./freelancerAPI');
 const { analyzeJob, generateAutoReply } = require('./jobAnalyzer');
 const { run, all, get } = require('../db/database');
+const axios = require('axios');
 
 class JobScanner {
   constructor() {
     this.isScanning = false;
     this.lastScanTime = null;
     this.scanCount = 0;
+    this.userSkills = [];
   }
 
   /**
-   * Scan for new design jobs
+   * Get user skills from Freelancer API
+   */
+  async getUserSkills() {
+    try {
+      const token = process.env.FREELANCER_OAUTH_TOKEN;
+      const response = await axios.get('https://www.freelancer.com/api/users/0.1/users/self/', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'freelancer-oauth-v1': token,
+        },
+      });
+
+      const skills = response.data.result.skills || [];
+      this.userSkills = skills.map(s => s.name.toLowerCase());
+      console.log(`👤 User skills: ${this.userSkills.join(', ')}`);
+      return this.userSkills;
+    } catch (error) {
+      console.error('❌ Error getting user skills:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Check if job skills match user skills
+   */
+  matchesUserSkills(jobSkills) {
+    if (!this.userSkills || this.userSkills.length === 0) {
+      return true; // If no user skills, accept all jobs
+    }
+
+    if (!jobSkills || jobSkills.length === 0) {
+      return true; // If job has no skill requirements, accept it
+    }
+
+    // Check if at least one job skill matches user skills
+    const jobSkillsLower = jobSkills.map(s => s.toLowerCase());
+    return jobSkillsLower.some(jobSkill =>
+      this.userSkills.some(userSkill =>
+        jobSkill.includes(userSkill) || userSkill.includes(jobSkill)
+      )
+    );
+  }
+
+  /**
+   * Scan for new design jobs matching user skills
    */
   async scanJobs(keywords = null) {
     if (this.isScanning) {
@@ -18,10 +64,13 @@ class JobScanner {
     }
 
     this.isScanning = true;
-    const results = { scanned: 0, new: 0, analyzed: 0, errors: [] };
+    const results = { scanned: 0, new: 0, analyzed: 0, skipped: 0, errors: [] };
 
     try {
       console.log('🔍 Starting job scan...');
+
+      // Get user skills first
+      await this.getUserSkills();
 
       const searchOptions = {};
       if (keywords) {
@@ -49,6 +98,16 @@ class JobScanner {
 
           if (existing) continue;
 
+          // Extract job skills
+          const jobSkills = project.jobs?.map(j => j.name) || [];
+
+          // Check if job matches user skills
+          if (!this.matchesUserSkills(jobSkills)) {
+            console.log(`⏭️  Skipping job ${project.id} - skills don't match (job: ${jobSkills.join(', ')})`);
+            results.skipped++;
+            continue;
+          }
+
           // Map project to our format
           const job = {
             id: `fl-${project.id}-${Date.now()}`,
@@ -58,7 +117,7 @@ class JobScanner {
             description: project.preview_description || project.description || '',
             budget: project.budget?.minimum || project.budget?.average || 0,
             currency: project.currency?.code || 'USD',
-            skills: JSON.stringify(project.jobs?.map(j => j.name) || []),
+            skills: JSON.stringify(jobSkills),
             client_name: project.owner?.username || 'Unknown',
             client_id: String(project.owner?.id || ''),
             project_url: `https://www.freelancer.com/projects/${project.seo_url || project.id}`,
@@ -99,7 +158,7 @@ class JobScanner {
       this.lastScanTime = new Date();
       this.scanCount++;
 
-      console.log(`✅ Scan complete: ${results.new} new jobs, ${results.analyzed} analyzed`);
+      console.log(`✅ Scan complete: ${results.new} new jobs, ${results.analyzed} analyzed, ${results.skipped} skipped (skills don't match)`);
 
       if (global.broadcast) {
         global.broadcast({
