@@ -167,14 +167,9 @@ function estimateTime(complexity, categories) {
 function calculateRecommendedBid(budget, complexity) {
   if (!budget || budget <= 0) return 25;
 
-  // Apply percentage markup based on complexity
-  // Easy: +5%, Medium: +7.5%, Hard: +10%
-  const markupPercentage = { easy: 0.05, medium: 0.075, hard: 0.10 };
-  const markup = markupPercentage[complexity] || 0.075;
-
-  const recommendedBid = Math.round(budget * (1 + markup));
-
-  return recommendedBid;
+  // Bid exactly at job budget for safety
+  // This avoids "minimum bid" errors while maintaining competitiveness
+  return Math.round(budget);
 }
 
 function calculateJobScore(job, complexity) {
