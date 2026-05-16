@@ -4,6 +4,7 @@ const API_BASE = process.env.FREELANCER_API_BASE || 'https://www.freelancer.com/
 const API_KEY = process.env.FREELANCER_API_KEY || '';
 const API_SECRET = process.env.FREELANCER_API_SECRET || '';
 const OAUTH_TOKEN = process.env.FREELANCER_OAUTH_TOKEN || '';
+const USER_ID = process.env.FREELANCER_USER_ID || '';
 
 // Freelancer API client with OAuth credentials
 const apiClient = axios.create({
@@ -131,6 +132,7 @@ async function placeBid(projectId, amount, period, description) {
 
     const response = await apiClient.post('/projects/0.1/bids/', {
       project_id: parseInt(projectId, 10),
+      bidder_id: parseInt(USER_ID, 10),
       amount: parseFloat(amount),
       period: parseInt(period, 10),
       description: description,
