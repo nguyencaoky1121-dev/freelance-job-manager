@@ -14,7 +14,7 @@ router.get('/status', (req, res) => {
     res.json({
       success: true,
       ...status,
-      geminiConfigured: !!process.env.GEMINI_API_KEY,
+      internalPipelineActive: true,
       githubConfigured: !!process.env.GITHUB_TOKEN,
     });
   } catch (err) {
@@ -28,13 +28,6 @@ router.get('/status', (req, res) => {
 router.post('/process/:id', async (req, res) => {
   try {
     const { id } = req.params;
-
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(400).json({
-        success: false,
-        error: 'GEMINI_API_KEY not configured. Please add it to .env file.',
-      });
-    }
 
     const bounty = await get('SELECT * FROM jobs WHERE id = ?', [id]);
     if (!bounty) {
@@ -68,14 +61,7 @@ router.post('/process/:id', async (req, res) => {
  */
 router.post('/process-all', async (req, res) => {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(400).json({
-        success: false,
-        error: 'GEMINI_API_KEY not configured',
-      });
-    }
-
-    // Get qualified bounties (budget > 0, score >= 40, not yet processed)
+    // Get qualified bounties (budget > 0, not yet processed)
     const bounties = await all(
       `SELECT * FROM jobs
        WHERE platform IN ('github', 'gitcoin', 'algora')
@@ -130,13 +116,6 @@ router.post('/process-all', async (req, res) => {
  */
 router.post('/analyze/:id', async (req, res) => {
   try {
-    if (!process.env.GEMINI_API_KEY) {
-      return res.status(400).json({
-        success: false,
-        error: 'GEMINI_API_KEY not configured',
-      });
-    }
-
     const bounty = await get('SELECT * FROM jobs WHERE id = ?', [req.params.id]);
     if (!bounty) {
       return res.status(404).json({ success: false, error: 'Bounty not found' });
