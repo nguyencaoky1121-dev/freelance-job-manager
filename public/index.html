@@ -3,511 +3,708 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Freelance Job Manager - Kiếm Tiền Online</title>
+  <title>Freelance Manager</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --warning: #f59e0b;
+      --warning-light: #fffbeb;
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --info: #0ea5e9;
+      --info-light: #f0f9ff;
+      --github: #24292e;
+      --github-accent: #238636;
+      --contest: #e67e22;
+      --radius: 10px;
+      --radius-sm: 6px;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
+      --transition: 200ms ease;
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 20px;
+      line-height: 1.5;
     }
 
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 2fr 1fr;
+    /* ─── HEADER ─── */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .app-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text);
+    }
+
+    .app-logo .icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary), #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 16px;
+    }
+
+    .header-stats {
+      display: flex;
+      align-items: center;
       gap: 20px;
-      height: calc(100vh - 40px);
     }
 
+    .stat-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      background: var(--surface-alt);
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-pill .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .stat-pill .dot.online { background: var(--success); }
+    .stat-pill .dot.offline { background: var(--danger); }
+
+    /* ─── MAIN LAYOUT ─── */
+    .app-body {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 300px 1fr 300px;
+      gap: 20px;
+      min-height: 500px;
+    }
+
+    /* ─── PANELS ─── */
     .panel {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow var(--transition);
     }
 
+    .panel:hover { box-shadow: var(--shadow); }
+
     .panel-header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 20px;
+      padding: 14px 18px;
       font-weight: 600;
-      font-size: 16px;
+      font-size: 13px;
+      color: var(--text);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-alt);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .panel-header .badge {
+      background: var(--primary);
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      min-width: 20px;
+      text-align: center;
     }
 
     .panel-content {
       flex: 1;
       overflow-y: auto;
-      padding: 20px;
+      padding: 12px;
     }
 
-    .job-item {
-      background: #f8f9fa;
-      border: 2px solid #e9ecef;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
+    .panel-content::-webkit-scrollbar { width: 4px; }
+    .panel-content::-webkit-scrollbar-track { background: transparent; }
+    .panel-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ─── HEADER CONTROLS ─── */
+    .header-controls {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    select {
+      padding: 5px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      font-size: 12px;
+      background: var(--surface);
+      color: var(--text);
       cursor: pointer;
-      transition: all 0.3s;
+      outline: none;
     }
 
-    .job-item:hover { border-color: #667eea; transform: translateY(-2px); }
-    .job-item.active { border-color: #667eea; background: #f0f4ff; }
+    select:focus { border-color: var(--primary); }
 
-    .job-title { font-weight: 600; font-size: 14px; margin-bottom: 8px; }
-    .job-meta { display: flex; gap: 10px; font-size: 12px; color: #666; margin-bottom: 8px; }
-    .job-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; background: #cfe2ff; color: #084298; }
-    .job-budget { color: #28a745; font-weight: 600; }
-
+    /* ─── BUTTONS ─── */
     button {
-      padding: 12px 20px;
+      padding: 7px 14px;
       border: none;
-      border-radius: 6px;
-      font-weight: 600;
+      border-radius: var(--radius-sm);
+      font-weight: 500;
       cursor: pointer;
-      font-size: 13px;
-      transition: all 0.3s;
+      font-size: 12px;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
     }
 
-    button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+    button:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+    button:active:not(:disabled) { transform: translateY(0); }
     button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .btn-primary { background: #667eea; color: white; }
-    .btn-primary:hover:not(:disabled) { background: #5568d3; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
 
-    .btn-success { background: #28a745; color: white; flex: 1; }
-    .btn-success:hover:not(:disabled) { background: #218838; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover:not(:disabled) { background: #059669; }
 
-    .btn-secondary { background: #6c757d; color: white; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { background: var(--surface-alt); border-color: var(--text-muted); }
 
-    .button-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-      flex-wrap: wrap;
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+
+    .button-group { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .button-group .btn-success { flex: 1; padding: 10px 16px; font-size: 13px; }
+
+    /* ─── JOB ITEMS ─── */
+    .job-item {
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 6px;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: 1px solid transparent;
+      background: var(--surface);
     }
 
+    .job-item:hover { background: var(--info-light); border-color: var(--primary); }
+    .job-item.active { background: var(--info-light); border-color: var(--primary); }
+
+    .job-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 6px;
+      color: var(--text);
+      line-height: 1.4;
+    }
+
+    .job-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      gap: 3px;
+    }
+
+    .tag-budget { background: var(--success-light); color: #065f46; }
+    .tag-status { background: var(--info-light); color: #0c4a6e; }
+    .tag-applied { background: var(--success-light); color: #065f46; }
+    .tag-bid { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    /* ─── SECTIONS ─── */
     .section {
-      background: #f8f9fa;
-      border-radius: 8px;
-      padding: 15px;
-      margin-bottom: 15px;
+      background: var(--surface-alt);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 12px;
+      border: 1px solid var(--border);
     }
 
-    .section-title { font-weight: 600; margin-bottom: 10px; color: #333; }
-    .section-item { font-size: 13px; color: #666; margin-bottom: 8px; line-height: 1.5; }
-    .section-item:before { content: "✓ "; color: #28a745; font-weight: 600; margin-right: 5px; }
+    .section-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
 
-    .empty { text-align: center; color: #999; padding: 40px 20px; }
-    .empty-icon { font-size: 48px; margin-bottom: 10px; }
+    .section-item {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
 
+    .section-item::before {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: var(--success);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    /* ─── EMPTY STATE ─── */
+    .empty {
+      text-align: center;
+      color: var(--text-muted);
+      padding: 40px 20px;
+    }
+
+    .empty-icon { font-size: 36px; margin-bottom: 8px; opacity: 0.6; }
+    .empty p { font-size: 13px; }
+
+    /* ─── NOTIFICATION TOAST ─── */
     .notification {
       position: fixed;
-      top: 20px;
+      top: 70px;
       right: 20px;
-      background: white;
-      padding: 15px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      background: var(--surface);
+      padding: 12px 18px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-lg);
       z-index: 1000;
-      animation: slideIn 0.3s ease;
-    }
-
-    .notification.success { border-left: 4px solid #28a745; }
-    .notification.error { border-left: 4px solid #dc3545; }
-    .notification.info { border-left: 4px solid #0dcaf0; }
-    .notification.warning { border-left: 4px solid #ffc107; }
-
-    .alert-badge {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: #dc3545;
-      color: white;
-      border-radius: 50%;
-      width: 24px;
-      height: 24px;
+      animation: toastIn 0.35s cubic-bezier(0.16,1,0.3,1);
+      font-size: 13px;
+      max-width: 380px;
+      border: 1px solid var(--border);
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 600;
+      gap: 8px;
     }
 
-    .monitoring-status {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      font-size: 12px;
-      color: #666;
-    }
+    .notification.success { border-left: 3px solid var(--success); }
+    .notification.error { border-left: 3px solid var(--danger); }
+    .notification.info { border-left: 3px solid var(--info); }
+    .notification.warning { border-left: 3px solid var(--warning); }
 
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #28a745;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-
-    @keyframes slideIn {
-      from { transform: translateX(400px); opacity: 0; }
+    @keyframes toastIn {
+      from { transform: translateX(120%); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
 
+    /* ─── BOTTOM PANELS (Contest + GitHub) ─── */
+    .bottom-panel {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .bottom-panel-header {
+      padding: 14px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bottom-panel-header .title-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .bottom-panel-header .title-group h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .count-badge {
+      background: var(--primary);
+      color: white;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    .count-badge.contest { background: var(--contest); }
+    .count-badge.github { background: var(--github); }
+
+    .bottom-panel-header .actions { display: flex; gap: 6px; align-items: center; }
+
+    .scan-status {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .scan-status .spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .card-scroll {
+      padding: 14px 18px;
+      display: flex;
+      gap: 14px;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+    }
+
+    .card-scroll::-webkit-scrollbar { height: 4px; }
+    .card-scroll::-webkit-scrollbar-track { background: transparent; }
+    .card-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ─── BOUNTY / CONTEST CARDS ─── */
+    .card {
+      flex: 0 0 260px;
+      padding: 14px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      position: relative;
+      scroll-snap-align: start;
+      transition: all var(--transition);
+    }
+
+    .card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow);
+      transform: translateY(-2px);
+    }
+
+    .card.submitted {
+      border-color: var(--success);
+      background: var(--success-light);
+    }
+
+    .card-platform {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .card-platform .platform-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .card-platform .platform-dot.github { background: var(--github); }
+    .card-platform .platform-dot.gitcoin { background: var(--primary); }
+    .card-platform .platform-dot.algora { background: #8b5cf6; }
+    .card-platform .platform-dot.contest { background: var(--contest); }
+
+    .card-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: var(--text);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+
+    .card-meta {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .card-amount {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 12px;
+      color: var(--success);
+    }
+
+    .card-amount.zero { color: var(--text-muted); font-size: 14px; }
+
+    .card-score {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .score-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    .score-fill.high { background: var(--success); }
+    .score-fill.mid { background: var(--warning); }
+    .score-fill.low { background: var(--danger); }
+
+    .score-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+    .btn-card {
+      width: 100%;
+      padding: 8px;
+      font-size: 12px;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-weight: 600;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .btn-card.github-btn { background: var(--github); color: white; }
+    .btn-card.github-btn:hover { background: #1a1e22; }
+
+    .btn-card.contest-btn { background: var(--contest); color: white; }
+    .btn-card.contest-btn:hover { background: #d35400; }
+
+    .btn-card.submitted-btn { background: var(--success); color: white; cursor: default; }
+
+    .card-empty {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-muted);
+      font-size: 13px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-status-badge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .card-status-badge.new { background: var(--info-light); color: #0369a1; }
+    .card-status-badge.submitted { background: var(--success-light); color: #065f46; }
+
+    /* ─── RESPONSIVE ─── */
     @media (max-width: 1200px) {
-      .container { grid-template-columns: 1fr; height: auto; }
-      .panel { max-height: 600px; }
+      .dashboard-grid { grid-template-columns: 1fr; }
+      .panel { max-height: 500px; }
     }
 
-    /* Contest Panel Styles */
-    .contest-bar {
-      max-width: 1400px;
-      margin: 15px auto 0;
+    @media (max-width: 768px) {
+      .app-header { padding: 0 12px; }
+      .header-stats { display: none; }
+      .app-body { padding: 12px; }
+      .card { flex: 0 0 220px; }
     }
 
-    .contest-panel {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      overflow: hidden;
+    /* ─── KEYFRAMES ─── */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
     }
 
-    .contest-header {
-      background: linear-gradient(135deg, #f0ad4e 0%, #d9534f 100%);
-      color: white;
-      padding: 15px 20px;
-      font-weight: 600;
-      font-size: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .contest-content {
-      padding: 15px 20px;
-      display: flex;
-      gap: 15px;
-      overflow-x: auto;
-    }
-
-    .contest-card {
-      flex: 0 0 280px;
-      background: #fff8f0;
-      border: 2px solid #f0ad4e;
-      border-radius: 8px;
-      padding: 15px;
-      position: relative;
-    }
-
-    .contest-card.submitted {
-      border-color: #28a745;
-      background: #f0fff4;
-    }
-
-    .contest-card-title {
-      font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 8px;
-      color: #333;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .contest-card-meta {
-      font-size: 11px;
-      color: #666;
-      margin-bottom: 10px;
-    }
-
-    .contest-card-prize {
-      font-weight: 700;
-      color: #d9534f;
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .btn-contest {
-      background: linear-gradient(135deg, #f0ad4e 0%, #d9534f 100%);
-      color: white;
-      width: 100%;
-      padding: 10px;
-      font-size: 13px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .btn-contest:hover { opacity: 0.9; }
-
-    .btn-contest.submitted {
-      background: #28a745;
-      cursor: default;
-    }
-
-    .btn-contest-all {
-      background: linear-gradient(135deg, #d9534f 0%, #c9302c 100%);
-      color: white;
-      padding: 8px 16px;
-      font-size: 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .contest-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: #f0ad4e;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: 600;
-    }
-
-    .contest-badge.submitted {
-      background: #28a745;
-    }
-
-    .contest-empty {
-      text-align: center;
-      padding: 20px;
-      color: #999;
-      font-size: 14px;
-      width: 100%;
-    }
-
-    /* GitHub Bounties Panel Styles */
-    .github-bar {
-      max-width: 1400px;
-      margin: 15px auto 0;
-    }
-
-    .github-panel {
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      overflow: hidden;
-    }
-
-    .github-header {
-      background: linear-gradient(135deg, #24292e 0%, #1f6feb 100%);
-      color: white;
-      padding: 15px 20px;
-      font-weight: 600;
-      font-size: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .github-content {
-      padding: 15px 20px;
-      display: flex;
-      gap: 15px;
-      overflow-x: auto;
-    }
-
-    .bounty-card {
-      flex: 0 0 280px;
-      background: #f6f8fa;
-      border: 2px solid #30363d;
-      border-radius: 8px;
-      padding: 15px;
-      position: relative;
-    }
-
-    .bounty-card.submitted {
-      border-color: #238636;
-      background: #0d3920;
-    }
-
-    .bounty-card-title {
-      font-weight: 600;
-      font-size: 13px;
-      margin-bottom: 8px;
-      color: #24292e;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .bounty-card.submitted .bounty-card-title {
-      color: #7ee787;
-    }
-
-    .bounty-card-meta {
-      font-size: 11px;
-      color: #57606a;
-      margin-bottom: 10px;
-    }
-
-    .bounty-card.submitted .bounty-card-meta {
-      color: #8ddb8c;
-    }
-
-    .bounty-card-amount {
-      font-weight: 700;
-      color: #1f6feb;
-      font-size: 16px;
-      margin-bottom: 10px;
-    }
-
-    .bounty-card.submitted .bounty-card-amount {
-      color: #58a6ff;
-    }
-
-    .btn-bounty {
-      background: #238636;
-      color: white;
-      width: 100%;
-      padding: 10px;
-      font-size: 13px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .btn-bounty:hover { background: #2ea043; }
-
-    .btn-bounty.submitted {
-      background: #1f6feb;
-      cursor: default;
-    }
-
-    .btn-bounty-all {
-      background: #238636;
-      color: white;
-      padding: 8px 16px;
-      font-size: 12px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .btn-bounty-all:hover { background: #2ea043; }
-
-    .bounty-badge {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      background: #1f6feb;
-      color: white;
-      padding: 2px 8px;
-      border-radius: 10px;
-      font-size: 10px;
-      font-weight: 600;
-    }
-
-    .bounty-badge.submitted {
-      background: #238636;
-    }
-
-    .bounty-empty {
-      text-align: center;
-      padding: 20px;
-      color: #57606a;
-      font-size: 14px;
-      width: 100%;
-    }
+    .fade-in { animation: fadeIn 0.3s ease; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- LEFT: Jobs List -->
-    <div class="panel">
-      <div class="panel-header">
-        📋 Jobs <span id="newJobsBadge" class="alert-badge" style="display: none;">0</span>
-        <div style="display: flex; gap: 8px;">
-          <select id="jobFilter" onchange="filterJobs()" style="padding: 6px 10px; border-radius: 4px; border: 1px solid #ddd; font-size: 12px; background: white;">
-            <option value="all">Tất cả</option>
-            <option value="not_applied">Chưa apply</option>
-            <option value="applied">Đã apply</option>
-          </select>
-          <button class="btn-primary" onclick="scanJobs()" style="flex: 0; padding: 8px 12px; font-size: 12px;">🔍 Scan</button>
+
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="app-logo">
+      <div class="icon">F</div>
+      Freelance Manager
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="dot online" id="monitoringDot"></span>
+        <span id="monitoringStatus">Live</span>
+      </div>
+      <div class="stat-pill" id="totalJobsStat">0 jobs</div>
+      <div class="stat-pill" id="totalBountiesStat">0 bounties</div>
+    </div>
+  </header>
+
+  <!-- MAIN BODY -->
+  <div class="app-body">
+
+    <!-- DASHBOARD GRID -->
+    <div class="dashboard-grid">
+
+      <!-- LEFT: Jobs List -->
+      <div class="panel">
+        <div class="panel-header">
+          Jobs
+          <div class="header-controls">
+            <select id="jobFilter" onchange="filterJobs()">
+              <option value="all">All</option>
+              <option value="not_applied">New</option>
+              <option value="applied">Applied</option>
+            </select>
+            <button class="btn-primary btn-sm" onclick="scanJobs()">Scan</button>
+          </div>
+        </div>
+        <div class="panel-content" id="jobsList">
+          <div class="empty"><div class="empty-icon">📭</div><p>Click Scan to find jobs</p></div>
         </div>
       </div>
-      <div class="panel-content" id="jobsList">
-        <div class="empty"><div class="empty-icon">📭</div><p>Click Scan để tìm jobs</p></div>
+
+      <!-- CENTER: Job Details -->
+      <div class="panel">
+        <div class="panel-header">
+          Details
+          <div class="stat-pill btn-sm">
+            <span class="dot online" id="monitoringDot2"></span>
+            Monitoring
+          </div>
+        </div>
+        <div class="panel-content" id="jobDetails">
+          <div class="empty"><div class="empty-icon">👈</div><p>Select a job to view details</p></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Actions -->
+      <div class="panel">
+        <div class="panel-header">
+          Actions
+          <span class="badge" id="newMessagesBadge" style="display: none;">0</span>
+        </div>
+        <div class="panel-content" id="actionsPanel">
+          <div class="empty"><div class="empty-icon">⏳</div><p>Select a job</p></div>
+        </div>
       </div>
     </div>
 
-    <!-- CENTER: Job Details -->
-    <div class="panel">
-      <div class="panel-header">
-        💼 Job Details
-        <div class="monitoring-status">
-          <div class="status-dot" id="monitoringDot"></div>
-          <span id="monitoringStatus">Monitoring active</span>
+    <!-- CONTEST PANEL -->
+    <div class="bottom-panel">
+      <div class="bottom-panel-header">
+        <div class="title-group">
+          <h3>Contests</h3>
+          <span class="count-badge contest" id="contestBadge" style="display:none;">0</span>
+        </div>
+        <div class="actions">
+          <span class="scan-status" id="contestStatus">
+            <span class="spinner"></span> Scanning...
+          </span>
+          <button class="btn-ghost btn-sm" onclick="loadContests()">Refresh</button>
+          <button class="btn-primary btn-sm" onclick="submitAllContests()" id="btnSubmitAll" disabled>Submit All</button>
         </div>
       </div>
-      <div class="panel-content" id="jobDetails">
-        <div class="empty"><div class="empty-icon">👈</div><p>Select a job to view details</p></div>
+      <div class="card-scroll" id="contestList">
+        <div class="card-empty"><span class="spinner"></span> Auto-scanning contests...</div>
       </div>
     </div>
 
-    <!-- RIGHT: Actions -->
-    <div class="panel">
-      <div class="panel-header">
-        🎯 Actions <span id="newMessagesBadge" class="alert-badge" style="display: none;">0</span>
-      </div>
-      <div class="panel-content" id="actionsPanel">
-        <div class="empty"><div class="empty-icon">⏳</div><p>Select a job</p></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CONTEST PANEL - Auto-scan & One-click Submit -->
-  <div class="contest-bar">
-    <div class="contest-panel">
-      <div class="contest-header">
-        🏆 Cuộc Thi Tự Động <span id="contestBadge" class="alert-badge" style="display: none;">0</span>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <span id="contestStatus" style="font-size: 11px; opacity: 0.8;">Đang quét...</span>
-          <button class="btn-contest-all" onclick="submitAllContests()" id="btnSubmitAll" disabled>📤 Nộp Tất Cả</button>
-          <button class="btn-contest-all" onclick="loadContests()" style="background: #5cb85c;">🔄 Làm Mới</button>
+    <!-- GITHUB BOUNTIES PANEL -->
+    <div class="bottom-panel">
+      <div class="bottom-panel-header">
+        <div class="title-group">
+          <h3>GitHub Bounties</h3>
+          <span class="count-badge github" id="githubBadge" style="display:none;">0</span>
+        </div>
+        <div class="actions">
+          <span class="scan-status" id="githubStatus">
+            <span class="spinner"></span> Scanning...
+          </span>
+          <button class="btn-ghost btn-sm" onclick="loadGithubBounties()">Refresh</button>
+          <button class="btn-success btn-sm" onclick="submitAllBounties()" id="btnSubmitAllBounties" disabled>Submit All</button>
         </div>
       </div>
-      <div class="contest-content" id="contestList">
-        <div class="contest-empty">⏳ Đang tự động quét cuộc thi... Hệ thống sẽ tìm và hiển thị cuộc thi phù hợp</div>
+      <div class="card-scroll" id="githubList">
+        <div class="card-empty"><span class="spinner"></span> Auto-scanning GitHub, Gitcoin, Algora...</div>
       </div>
     </div>
-  </div>
 
-  <!-- GITHUB BOUNTIES PANEL - Auto-scan & One-click Submit -->
-  <div class="github-bar">
-    <div class="github-panel">
-      <div class="github-header">
-        🐙 GitHub Bounties <span id="githubBadge" class="alert-badge" style="display: none;">0</span>
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <span id="githubStatus" style="font-size: 11px; opacity: 0.8;">Đang quét...</span>
-          <button class="btn-bounty-all" onclick="submitAllBounties()" id="btnSubmitAllBounties" disabled>📤 Nộp Tất Cả</button>
-          <button class="btn-bounty-all" onclick="loadGithubBounties()" style="background: #1f6feb;">🔄 Làm Mới</button>
-        </div>
-      </div>
-      <div class="github-content" id="githubList">
-        <div class="bounty-empty">⏳ Đang tự động quét GitHub, Gitcoin, Algora... Hệ thống sẽ tìm và hiển thị bounties phù hợp</div>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -525,148 +722,100 @@
     let newJobsCount = 0;
     let newMessagesCount = 0;
     let ws = null;
-    let jobFilter = 'all'; // 'all', 'not_applied', 'applied'
+    let jobFilter = 'all';
 
-    console.log('✅ API_BASE:', API_BASE);
-    console.log('✅ WS_BASE:', WS_BASE);
-
-    // WEBSOCKET CONNECTION
+    // WEBSOCKET
     function connectWebSocket() {
       try {
         ws = new WebSocket(WS_BASE);
-
-        ws.onopen = () => {
-          console.log('🔌 WebSocket connected');
-          updateMonitoringStatus(true);
-        };
-
-        ws.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          handleWebSocketMessage(data);
-        };
-
-        ws.onerror = (error) => {
-          console.error('❌ WebSocket error:', error);
-          updateMonitoringStatus(false);
-        };
-
-        ws.onclose = () => {
-          console.log('🔌 WebSocket disconnected');
-          updateMonitoringStatus(false);
-          // Reconnect after 3 seconds
-          setTimeout(connectWebSocket, 3000);
-        };
-      } catch (err) {
-        console.error('❌ WebSocket connection failed:', err);
-        updateMonitoringStatus(false);
-      }
+        ws.onopen = () => { updateMonitoringStatus(true); };
+        ws.onmessage = (event) => { handleWebSocketMessage(JSON.parse(event.data)); };
+        ws.onerror = () => { updateMonitoringStatus(false); };
+        ws.onclose = () => { updateMonitoringStatus(false); setTimeout(connectWebSocket, 3000); };
+      } catch (err) { updateMonitoringStatus(false); }
     }
 
-    // HANDLE WEBSOCKET MESSAGES
     function handleWebSocketMessage(data) {
-      console.log('📨 WebSocket message:', data.type);
-
       if (data.type === 'NEW_JOB') {
         newJobsCount++;
-        updateJobsBadge();
-        showNotif(`🎉 New job: ${data.job.title}`, 'info');
+        showNotif(`New job: ${data.job.title}`, 'info');
         loadJobs();
       } else if (data.type === 'NEW_CONTEST') {
-        showNotif(`🏆 Cuộc thi mới: ${data.contest.title} ($${data.contest.budget})`, 'info');
+        showNotif(`New contest: ${data.contest.title} ($${data.contest.budget})`, 'info');
         loadContests();
       } else if (data.type === 'CONTEST_SUBMITTED') {
-        showNotif(`✅ Đã nộp bài: ${data.title}`, 'success');
+        showNotif(`Contest submitted: ${data.title}`, 'success');
         loadContests();
       } else if (data.type === 'NEW_GITHUB_BOUNTY') {
-        showNotif(`🐙 GitHub bounty mới: ${data.bounty.title} ($${data.bounty.budget})`, 'info');
+        showNotif(`GitHub bounty: ${data.bounty.title}`, 'info');
         loadGithubBounties();
       } else if (data.type === 'NEW_GITCOIN_BOUNTY') {
-        showNotif(`💰 Gitcoin bounty mới: ${data.bounty.title} ($${data.bounty.budget})`, 'info');
+        showNotif(`Gitcoin bounty: ${data.bounty.title}`, 'info');
         loadGithubBounties();
       } else if (data.type === 'NEW_ALGORA_BOUNTY') {
-        showNotif(`🎯 Algora bounty mới: ${data.bounty.title} ($${data.bounty.budget})`, 'info');
+        showNotif(`Algora bounty: ${data.bounty.title}`, 'info');
         loadGithubBounties();
       } else if (data.type === 'GITHUB_BOUNTY_SUBMITTED') {
-        showNotif(`✅ Đã submit GitHub bounty: ${data.title}`, 'success');
+        showNotif(`Bounty submitted: ${data.title}`, 'success');
         loadGithubBounties();
       } else if (data.type === 'NEW_MESSAGE') {
         newMessagesCount++;
         updateMessagesBadge();
-        showNotif(`💬 Message from ${data.message.sender}: ${data.message.content.substring(0, 50)}...`, 'info');
+        showNotif(`Message from ${data.message.sender}`, 'info');
         loadJobs();
       } else if (data.type === 'JOB_AWARDED') {
-        showNotif(`🎉 Job awarded: ${data.job.title} ($${data.job.budget})`, 'success');
+        showNotif(`Job awarded: ${data.job.title} ($${data.job.budget})`, 'success');
         loadJobs();
       } else if (data.type === 'PROPOSAL_SENT') {
-        showNotif(`✅ Proposal sent for $${data.amount}`, 'success');
+        showNotif(`Proposal sent for $${data.amount}`, 'success');
         loadJobs();
       } else if (data.type === 'DELIVERABLE_SUBMITTED') {
-        showNotif(`📤 Deliverable submitted`, 'success');
+        showNotif('Deliverable submitted', 'success');
         loadJobs();
       } else if (data.type === 'PAYMENT_REQUESTED') {
-        showNotif(`💰 Payment requested: $${data.amount}`, 'success');
+        showNotif(`Payment requested: $${data.amount}`, 'success');
         loadJobs();
       } else if (data.type === 'SCAN_COMPLETE') {
-        showNotif(`✅ Scan complete: ${data.results.new} new jobs`, 'success');
-      } else if (data.type === 'MONITORING_UPDATE') {
-        console.log(`📬 Monitoring: ${data.newMessages} messages, ${data.newAwards} awards, ${data.newContests || 0} contests`);
+        showNotif(`Scan complete: ${data.results.new} new jobs`, 'success');
       }
     }
 
     function updateMonitoringStatus(active) {
-      const dot = document.getElementById('monitoringDot');
-      const status = document.getElementById('monitoringStatus');
-      if (active) {
-        dot.style.background = '#28a745';
-        status.textContent = 'Monitoring active';
-      } else {
-        dot.style.background = '#dc3545';
-        status.textContent = 'Monitoring offline';
-      }
-    }
-
-    function updateJobsBadge() {
-      const badge = document.getElementById('newJobsBadge');
-      if (newJobsCount > 0) {
-        badge.textContent = newJobsCount;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
+      document.querySelectorAll('#monitoringDot, #monitoringDot2').forEach(dot => {
+        dot.className = `dot ${active ? 'online' : 'offline'}`;
+      });
+      const s = document.getElementById('monitoringStatus');
+      s.textContent = active ? 'Live' : 'Offline';
     }
 
     function updateMessagesBadge() {
       const badge = document.getElementById('newMessagesBadge');
-      if (newMessagesCount > 0) {
-        badge.textContent = newMessagesCount;
-        badge.style.display = 'flex';
-      } else {
-        badge.style.display = 'none';
-      }
+      if (newMessagesCount > 0) { badge.textContent = newMessagesCount; badge.style.display = ''; }
+      else { badge.style.display = 'none'; }
+    }
+
+    // NOTIFICATION
+    function showNotif(msg, type = 'info') {
+      const n = document.createElement('div');
+      n.className = `notification ${type} fade-in`;
+      const icons = { success: '&#10003;', error: '&#10007;', info: 'i', warning: '!' };
+      n.innerHTML = `<strong>${icons[type] || 'i'}</strong> ${msg}`;
+      document.body.appendChild(n);
+      setTimeout(() => { n.style.opacity = '0'; n.style.transform = 'translateX(40px)'; n.style.transition = '0.3s ease'; setTimeout(() => n.remove(), 300); }, 4000);
     }
 
     // SCAN JOBS
     async function scanJobs() {
       const btn = event.target;
       btn.disabled = true;
-      btn.textContent = '⏳ Scanning...';
-
+      btn.textContent = 'Scanning...';
       try {
         const res = await fetch(`${API_BASE}/jobs/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-
-        if (data.success) {
-          showNotif(`✅ Found ${data.new} jobs!`, 'success');
-          await loadJobs();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      } finally {
-        btn.disabled = false;
-        btn.textContent = '🔍 Scan';
-      }
+        if (data.success) { showNotif(`Found ${data.new} jobs`, 'success'); await loadJobs(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
+      finally { btn.disabled = false; btn.textContent = 'Scan'; }
     }
 
     // LOAD JOBS
@@ -674,56 +823,38 @@
       try {
         const res = await fetch(`${API_BASE}/jobs?limit=100`);
         const data = await res.json();
-        if (data.success && data.jobs.length > 0) {
-          jobs = data.jobs;
-          renderJobs();
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success && data.jobs.length > 0) { jobs = data.jobs; renderJobs(); updateStats(); }
+      } catch (e) { /* silent */ }
+    }
+
+    function updateStats() {
+      document.getElementById('totalJobsStat').textContent = `${jobs.length} jobs`;
     }
 
     // RENDER JOBS
     function renderJobs() {
       const list = document.getElementById('jobsList');
+      let filtered = jobs;
+      if (jobFilter === 'applied') filtered = jobs.filter(j => j.bid_placed);
+      else if (jobFilter === 'not_applied') filtered = jobs.filter(j => !j.bid_placed);
 
-      // Lọc jobs theo trạng thái apply
-      let filteredJobs = jobs;
-      if (jobFilter === 'applied') {
-        filteredJobs = jobs.filter(j => j.bid_placed);
-      } else if (jobFilter === 'not_applied') {
-        filteredJobs = jobs.filter(j => !j.bid_placed);
-      }
+      if (filtered.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No jobs found</p></div>'; return; }
 
-      if (filteredJobs.length === 0) {
-        list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>Không có jobs</p></div>';
-        return;
-      }
-
-      list.innerHTML = filteredJobs.map(j => `
+      list.innerHTML = filtered.map(j => `
         <div class="job-item ${selectedJob?.id === j.id ? 'active' : ''}" onclick="selectJob('${j.id}')">
-          <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div style="flex: 1;">
-              <div class="job-title">${j.title.substring(0, 25)}</div>
-              <div class="job-meta">
-                <span class="job-budget">💰 $${j.budget}</span>
-                <span class="job-badge">${j.status}</span>
-                ${j.bid_placed ? '<span class="job-badge" style="background: #d1e7dd; color: #0f5132;">✅ Đã apply</span>' : ''}
-              </div>
-            </div>
+          <div class="job-title">${j.title.substring(0, 40)}</div>
+          <div class="job-meta">
+            <span class="tag tag-budget">$${j.budget}</span>
+            <span class="tag tag-status">${j.status}</span>
+            ${j.bid_placed ? '<span class="tag tag-applied">Applied</span>' : ''}
           </div>
-          ${j.bid_placed ? `<div style="font-size: 11px; color: #666; margin-top: 8px;">💵 Bid: $${j.bid_amount} • ${new Date(j.bid_placed_at).toLocaleDateString('vi-VN')}</div>` : ''}
+          ${j.bid_placed ? `<div class="tag-bid">Bid: $${j.bid_amount}</div>` : ''}
         </div>
       `).join('');
     }
 
-    // LỌC JOBS
-    function filterJobs() {
-      jobFilter = document.getElementById('jobFilter').value;
-      renderJobs();
-    }
+    function filterJobs() { jobFilter = document.getElementById('jobFilter').value; renderJobs(); }
 
-    // SELECT JOB
     function selectJob(jobId) {
       selectedJob = jobs.find(j => j.id === jobId);
       renderJobs();
@@ -734,691 +865,338 @@
     // SHOW JOB DETAILS
     function showJobDetails() {
       if (!selectedJob) return;
-
-      const analysis = selectedJob.analysis || {};
-      const jobType = analysis.jobType || {};
-      const isContest = jobType.isContest || false;
+      const a = selectedJob.analysis || {};
+      const jt = a.jobType || {};
+      const isContest = jt.isContest || false;
 
       const bidInfo = selectedJob.bid_placed
-        ? `<div class="section" style="background: #d1e7dd; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-             <div class="section-title">✅ Đã Apply</div>
+        ? `<div class="section" style="background:var(--success-light);border-color:var(--success)">
+             <div class="section-title">Applied</div>
              <div class="section-item">Bid: $${selectedJob.bid_amount}</div>
-             <div class="section-item">Ngày: ${new Date(selectedJob.bid_placed_at).toLocaleDateString('vi-VN')}</div>
-           </div>`
-        : '';
+             <div class="section-item">Date: ${new Date(selectedJob.bid_placed_at).toLocaleDateString('vi-VN')}</div>
+           </div>` : '';
 
-      const jobTypeInfo = `<div class="section" style="background: ${isContest ? '#fff3cd' : '#cfe2ff'}; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
-        <div class="section-title">${isContest ? '🏆 Cuộc Thi' : '💼 Bid Trực Tiếp'}</div>
-        <div class="section-item">${jobType.recommendation || 'N/A'}</div>
-      </div>`;
+      const typeColor = isContest ? 'var(--warning-light)' : 'var(--info-light)';
+      const typeBorder = isContest ? 'var(--warning)' : 'var(--info)';
 
-      const html = `
-        ${jobTypeInfo}
+      document.getElementById('jobDetails').innerHTML = `
+        <div class="section" style="background:${typeColor};border-color:${typeBorder}">
+          <div class="section-title">${isContest ? 'Contest' : 'Direct Bid'}</div>
+          <div class="section-item">${jt.recommendation || 'N/A'}</div>
+        </div>
         ${bidInfo}
         <div class="section">
-          <div class="section-title">📊 Phân Tích</div>
-          <div class="section-item">Loại: ${(analysis.categories || []).join(', ')}</div>
-          <div class="section-item">Độ phức tạp: ${analysis.complexity || 'N/A'}</div>
-          <div class="section-item">Điểm: ${analysis.score || 0}/100</div>
-          <div class="section-item">Thời gian: ~${analysis.estimatedHours || 2}h</div>
-          <div class="section-item">Bid đề xuất: $${analysis.recommendedBid || selectedJob.budget}</div>
+          <div class="section-title">Analysis</div>
+          <div class="section-item">Type: ${(a.categories || []).join(', ')}</div>
+          <div class="section-item">Complexity: ${a.complexity || 'N/A'}</div>
+          <div class="section-item">Score: ${a.score || 0}/100</div>
+          <div class="section-item">Time: ~${a.estimatedHours || 2}h</div>
+          <div class="section-item">Recommended bid: $${a.recommendedBid || selectedJob.budget}</div>
         </div>
-
         <div class="section">
-          <div class="section-title">💡 Cách Tiếp Cận</div>
-          ${(analysis.approach || []).map(a => `<div class="section-item">${a}</div>`).join('')}
+          <div class="section-title">Approach</div>
+          ${(a.approach || []).map(x => `<div class="section-item">${x}</div>`).join('')}
         </div>
-
         <div class="section">
-          <div class="section-title">📝 Đề Xuất</div>
-          <div style="font-size: 12px; color: #666; line-height: 1.5; white-space: pre-wrap; max-height: 200px; overflow-y: auto;">
-            ${analysis.proposal || 'N/A'}
-          </div>
+          <div class="section-title">Proposal</div>
+          <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;max-height:200px;overflow-y:auto">${a.proposal || 'N/A'}</div>
         </div>
       `;
-
-      document.getElementById('jobDetails').innerHTML = html;
     }
 
     // SHOW ACTIONS
     function showActions() {
       if (!selectedJob) return;
-
       const status = selectedJob.status;
-      const analysis = selectedJob.analysis || {};
-      const isContest = analysis.jobType?.isContest || false;
-      let actions = '';
+      const a = selectedJob.analysis || {};
+      const isContest = a.jobType?.isContest || false;
+      let html = '';
 
-      // Nếu đã apply, hiển thị thông báo
       if (selectedJob.bid_placed) {
-        actions = `
-          <div class="section" style="background: #d1e7dd; border-radius: 8px; padding: 20px; text-align: center;">
-            <div style="font-size: 32px; margin-bottom: 10px;">✅</div>
-            <div style="font-weight: 600; color: #0f5132; margin-bottom: 5px;">Đã Apply</div>
-            <div style="color: #0f5132; font-size: 12px;">
-              Bid: <strong>$${selectedJob.bid_amount}</strong><br>
-              Ngày: ${new Date(selectedJob.bid_placed_at).toLocaleDateString('vi-VN')}
-            </div>
+        html = `
+          <div class="section" style="background:var(--success-light);border-color:var(--success);text-align:center;padding:24px">
+            <div style="font-size:28px;margin-bottom:8px">&#10003;</div>
+            <div style="font-weight:600;color:#065f46;margin-bottom:4px">Applied</div>
+            <div style="color:#065f46;font-size:12px">Bid: <strong>$${selectedJob.bid_amount}</strong></div>
           </div>
           <div class="section">
-            <div class="section-title">⏳ Chờ Khách Hàng</div>
-            <div class="section-item">Hệ thống sẽ giám sát để phát hiện khi khách hàng liên hệ hoặc trao giải công việc</div>
-          </div>
-        `;
+            <div class="section-title">Waiting for client</div>
+            <div class="section-item">System will notify when client responds</div>
+          </div>`;
       } else if (status === 'ANALYZED') {
-        const buttonText = isContest ? '🏆 Tham Gia Cuộc Thi' : '✅ Gửi Đề Xuất';
-        const buttonAction = isContest ? `submitContest('${selectedJob.id}')` : `approveJob('${selectedJob.id}')`;
-
-        actions = `
+        const btnText = isContest ? 'Join Contest' : 'Send Proposal';
+        const btnAction = isContest ? `submitContest('${selectedJob.id}')` : `approveJob('${selectedJob.id}')`;
+        html = `
           <div class="section">
-            <div class="section-title">${isContest ? '🏆 Tham Gia Cuộc Thi' : '✅ Sẵn sàng gửi đề xuất'}</div>
-            <div class="section-item">Số tiền: $${selectedJob.analysis?.recommendedBid || selectedJob.budget}</div>
-            ${isContest ? '<div class="section-item" style="font-size: 11px; color: #666;">Tham gia cuộc thi - Cơ hội thắng cao hơn</div>' : ''}
+            <div class="section-title">${isContest ? 'Contest Entry' : 'Ready to submit'}</div>
+            <div class="section-item">Amount: $${a.recommendedBid || selectedJob.budget}</div>
           </div>
-          <div class="button-group">
-            <button class="btn-success" onclick="${buttonAction}">${buttonText}</button>
-          </div>
-        `;
+          <div class="button-group"><button class="btn-success" onclick="${btnAction}">${btnText}</button></div>`;
       } else if (status === 'APPROVED') {
-        actions = `
-          <div class="section">
-            <div class="section-title">🤝 Đề xuất đã gửi!</div>
-            <div class="section-item">Chờ khách hàng chấp nhận</div>
-          </div>
-          <div class="button-group">
-            <button class="btn-success" onclick="acceptJob('${selectedJob.id}')">🤝 Gửi Tin Nhắn</button>
-          </div>
-        `;
+        html = `
+          <div class="section"><div class="section-title">Proposal sent</div><div class="section-item">Waiting for client</div></div>
+          <div class="button-group"><button class="btn-success" onclick="acceptJob('${selectedJob.id}')">Send Message</button></div>`;
       } else if (status === 'ACCEPTED') {
-        actions = `
-          <div class="section">
-            <div class="section-title">🎨 Bắt Đầu Làm Việc</div>
-            <div class="section-item">AI sẽ tự động tạo design</div>
-          </div>
-          <div class="button-group">
-            <button class="btn-success" onclick="startWork('${selectedJob.id}')">🎨 Bắt Đầu & Tạo Design</button>
-          </div>
-        `;
+        html = `
+          <div class="section"><div class="section-title">Start work</div><div class="section-item">AI will generate design</div></div>
+          <div class="button-group"><button class="btn-success" onclick="startWork('${selectedJob.id}')">Start & Generate</button></div>`;
       } else if (status === 'IN_PROGRESS') {
-        actions = `
-          <div class="section">
-            <div class="section-title">📤 Nộp Deliverable</div>
-            <div class="section-item">Design sẵn sàng để nộp</div>
-          </div>
-          <div class="button-group">
-            <button class="btn-success" onclick="submitJob('${selectedJob.id}')">📤 Nộp Deliverable</button>
-          </div>
-        `;
+        html = `
+          <div class="section"><div class="section-title">Submit deliverable</div><div class="section-item">Design ready</div></div>
+          <div class="button-group"><button class="btn-success" onclick="submitJob('${selectedJob.id}')">Submit</button></div>`;
       } else if (status === 'SUBMITTED') {
-        actions = `
-          <div class="section">
-            <div class="section-title">💰 Yêu Cầu Thanh Toán</div>
-            <div class="section-item">Deliverable đã nộp, yêu cầu milestone</div>
-          </div>
-          <div class="button-group">
-            <button class="btn-success" onclick="requestPayment('${selectedJob.id}')">💰 Yêu Cầu Thanh Toán</button>
-          </div>
-        `;
+        html = `
+          <div class="section"><div class="section-title">Request payment</div><div class="section-item">Deliverable submitted</div></div>
+          <div class="button-group"><button class="btn-success" onclick="requestPayment('${selectedJob.id}')">Request Payment</button></div>`;
       } else if (status === 'PAYMENT_REQUESTED') {
-        actions = `
+        html = `
           <div class="section">
-            <div class="section-title">💸 Xác Nhận Thanh Toán</div>
-            <div class="section-item">Nhập số tiền nhận được:</div>
-            <input type="number" id="amount_${selectedJob.id}" placeholder="$50" value="${selectedJob.budget * 0.8}" style="width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px;">
+            <div class="section-title">Confirm payment</div>
+            <input type="number" id="amount_${selectedJob.id}" placeholder="$50" value="${selectedJob.budget * 0.8}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px">
           </div>
-          <div class="button-group">
-            <button class="btn-success" onclick="confirmPayment('${selectedJob.id}')">✅ Xác Nhận Đã Thanh Toán</button>
-          </div>
-        `;
+          <div class="button-group"><button class="btn-success" onclick="confirmPayment('${selectedJob.id}')">Confirm Payment</button></div>`;
       } else if (status === 'COMPLETED') {
-        actions = `
-          <div class="section" style="background: #d1e7dd; border-radius: 8px; padding: 20px; text-align: center;">
-            <div style="font-size: 32px; margin-bottom: 10px;">🎉</div>
-            <div style="font-weight: 600; color: #0f5132; margin-bottom: 5px;">Hoàn Thành!</div>
-            <div style="color: #0f5132;">Thu nhập: <strong>$${selectedJob.earnings}</strong></div>
-          </div>
-        `;
+        html = `
+          <div class="section" style="background:var(--success-light);border-color:var(--success);text-align:center;padding:24px">
+            <div style="font-size:28px;margin-bottom:8px">&#127881;</div>
+            <div style="font-weight:600;color:#065f46">Complete!</div>
+            <div style="color:#065f46">Earned: <strong>$${selectedJob.earnings}</strong></div>
+          </div>`;
       }
 
-      document.getElementById('actionsPanel').innerHTML = actions || '<div class="empty"><p>Không có hành động</p></div>';
+      document.getElementById('actionsPanel').innerHTML = html || '<div class="empty"><p>No actions</p></div>';
     }
 
-    // APPROVE JOB (SEND PROPOSAL)
+    // API ACTIONS
     async function approveJob(jobId) {
-      if (!confirm(`Gửi đề xuất cho $${selectedJob.analysis?.recommendedBid || selectedJob.budget}?`)) return;
-
+      if (!confirm(`Send proposal for $${selectedJob.analysis?.recommendedBid || selectedJob.budget}?`)) return;
       try {
         const res = await fetch(`${API_BASE}/actions/send-proposal`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobId,
-            projectId: selectedJob.external_id,
-            amount: selectedJob.analysis?.recommendedBid || selectedJob.budget,
-            period: 7,
-            proposal: selectedJob.analysis?.proposal || 'Professional design',
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, projectId: selectedJob.external_id, amount: selectedJob.analysis?.recommendedBid || selectedJob.budget, period: 7, proposal: selectedJob.analysis?.proposal || 'Professional design' }),
         });
-
         const data = await res.json();
-        if (data.success) {
-          showNotif('✅ Đề xuất đã gửi!', 'success');
-          await loadJobs();
-          selectedJob = jobs.find(j => j.id === jobId);
-          showJobDetails();
-          showActions();
-        } else {
-          // Kiểm tra nếu là lỗi đã apply rồi
-          if (data.error === 'Already bid on this project' || res.status === 409) {
-            showNotif('⚠️ Bạn đã apply job này rồi', 'warning');
-            await loadJobs();
-            selectedJob = jobs.find(j => j.id === jobId);
-            showJobDetails();
-            showActions();
-          } else {
-            showNotif(`❌ ${data.error || data.message}`, 'error');
-          }
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Proposal sent!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        else if (data.error === 'Already bid on this project' || res.status === 409) { showNotif('Already applied', 'warning'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        else { showNotif(data.error || data.message, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // ACCEPT JOB
     async function acceptJob(jobId) {
       if (!confirm('Send acceptance message?')) return;
-
       try {
         const res = await fetch(`${API_BASE}/actions/send-message`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobId,
-            threadId: selectedJob.external_id,
-            message: `Thank you for choosing me! I'm excited to work on your project. I'll start right away!`,
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, threadId: selectedJob.external_id, message: "Thank you for choosing me! I'm excited to work on your project. I'll start right away!" }),
         });
-
         const data = await res.json();
-        if (data.success) {
-          showNotif('✅ Message sent!', 'success');
-          await loadJobs();
-          selectedJob = jobs.find(j => j.id === jobId);
-          showActions();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Message sent!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // START WORK
     async function startWork(jobId) {
       if (!confirm('Generate design?')) return;
-
       try {
-        const res = await fetch(`${API_BASE}/jobs/${jobId}/start-work`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: '{}',
-        });
-
+        const res = await fetch(`${API_BASE}/jobs/${jobId}/start-work`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        if (data.success) {
-          showNotif('✅ Design generated!', 'success');
-          await loadJobs();
-          selectedJob = jobs.find(j => j.id === jobId);
-          showActions();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Design generated!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // SUBMIT JOB
     async function submitJob(jobId) {
       if (!confirm('Submit deliverable?')) return;
-
       try {
         const res = await fetch(`${API_BASE}/actions/submit-deliverable`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobId,
-            projectId: selectedJob.external_id,
-            bidId: selectedJob.external_id,
-            deliverableUrl: 'https://example.com/design.zip',
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, projectId: selectedJob.external_id, bidId: selectedJob.external_id, deliverableUrl: 'https://example.com/design.zip' }),
         });
-
         const data = await res.json();
-        if (data.success) {
-          showNotif('✅ Submitted!', 'success');
-          await loadJobs();
-          selectedJob = jobs.find(j => j.id === jobId);
-          showActions();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Submitted!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // REQUEST PAYMENT
     async function requestPayment(jobId) {
       const amount = selectedJob.budget * 0.8;
       if (!confirm(`Request $${amount}?`)) return;
-
       try {
         const res = await fetch(`${API_BASE}/actions/request-payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobId,
-            projectId: selectedJob.external_id,
-            bidId: selectedJob.external_id,
-            amount,
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, projectId: selectedJob.external_id, bidId: selectedJob.external_id, amount }),
         });
-
         const data = await res.json();
-        if (data.success) {
-          showNotif(`✅ Payment request sent!`, 'success');
-          await loadJobs();
-          selectedJob = jobs.find(j => j.id === jobId);
-          showActions();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Payment request sent!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // CONFIRM PAYMENT
     async function confirmPayment(jobId) {
       const amount = document.getElementById(`amount_${jobId}`)?.value || selectedJob.budget * 0.8;
       if (!confirm(`Confirm $${amount}?`)) return;
-
       try {
         const res = await fetch(`${API_BASE}/jobs/${jobId}/confirm-payment`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: parseFloat(amount) }),
         });
-
         const data = await res.json();
-        if (data.success) {
-          showNotif(`✅ Earned $${amount}!`, 'success');
-          await loadJobs();
-          selectedJob = jobs.find(j => j.id === jobId);
-          showDetails();
-          showActions();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif(`Earned $${amount}!`, 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // SUBMIT CONTEST ENTRY
+    // CONTEST FUNCTIONS
     async function submitContest(jobId) {
-      if (!confirm(`Tham gia cuộc thi với entry này?`)) return;
-
+      if (!confirm('Join this contest?')) return;
       try {
         const res = await fetch(`${API_BASE}/actions/submit-contest`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            jobId,
-            projectId: selectedJob.external_id,
-            contestId: selectedJob.external_id,
-            entryUrl: 'https://example.com/entry',
-            description: selectedJob.analysis?.proposal || 'Design entry',
-          }),
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId, projectId: selectedJob.external_id, contestId: selectedJob.external_id, entryUrl: 'https://example.com/entry', description: selectedJob.analysis?.proposal || 'Design entry' }),
         });
-
         const data = await res.json();
-        if (data.success) {
-          showNotif('✅ Entry submitted! Chờ khách hàng chọn entry tốt nhất', 'success');
-          await loadJobs();
-          selectedJob = jobs.find(j => j.id === jobId);
-          showJobDetails();
-          showActions();
-        } else {
-          showNotif(`❌ ${data.error || data.message}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Entry submitted!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        else { showNotif(data.error || data.message, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    function showNotif(msg, type = 'info') {
-      const notif = document.createElement('div');
-      notif.className = `notification ${type}`;
-      notif.textContent = msg;
-      document.body.appendChild(notif);
-      setTimeout(() => notif.remove(), 4000);
-    }
-
-    // LOAD CONTESTS
-    let contests = [];
     async function loadContests() {
       try {
         const res = await fetch(`${API_BASE}/contests`);
         const data = await res.json();
-
-        if (data.success) {
-          contests = data.contests || [];
-          renderContests();
-          updateContestBadge();
-        }
-      } catch (e) {
-        console.error('❌ Error loading contests:', e.message);
-      }
+        if (data.success) { renderContests(data.contests || []); }
+      } catch (e) { /* silent */ }
     }
 
-    // RENDER CONTESTS
-    function renderContests() {
-      const list = document.getElementById('contestList');
-
-      if (!contests || contests.length === 0) {
-        list.innerHTML = '<div class="contest-empty">📭 Chưa có cuộc thi nào. Hệ thống sẽ tự động quét...</div>';
-        return;
-      }
-
-      const readyContests = contests.filter(c => c.status === 'CONTEST_READY');
-      const submittedContests = contests.filter(c => c.status === 'SUBMITTED');
-
-      let html = '';
-
-      // Submitted contests
-      if (submittedContests.length > 0) {
-        submittedContests.forEach(c => {
-          html += `
-            <div class="contest-card submitted">
-              <div class="contest-badge submitted">✅ Đã nộp</div>
-              <div class="contest-card-title">${c.title}</div>
-              <div class="contest-card-meta">
-                <div>💰 $${c.budget}</div>
-                <div>📅 ${new Date(c.bid_placed_at).toLocaleDateString('vi-VN')}</div>
-              </div>
-              <button class="btn-contest submitted" disabled>✅ Đã Nộp Bài</button>
-            </div>
-          `;
-        });
-      }
-
-      // Ready contests
-      if (readyContests.length > 0) {
-        readyContests.forEach(c => {
-          html += `
-            <div class="contest-card">
-              <div class="contest-badge">🆕 Mới</div>
-              <div class="contest-card-title">${c.title}</div>
-              <div class="contest-card-meta">
-                <div>💰 $${c.budget}</div>
-                <div>🎯 ${(c.analysis?.score || 0)}/100</div>
-              </div>
-              <div class="contest-card-prize">$${c.budget}</div>
-              <button class="btn-contest" onclick="submitContest('${c.id}')">🏆 Nộp Bài Thi</button>
-            </div>
-          `;
-        });
-      }
-
-      list.innerHTML = html || '<div class="contest-empty">📭 Không có cuộc thi</div>';
-    }
-
-    // UPDATE CONTEST BADGE
-    function updateContestBadge() {
-      const readyCount = contests.filter(c => c.status === 'CONTEST_READY').length;
+    function renderContests(contests) {
+      const el = document.getElementById('contestList');
+      const statusEl = document.getElementById('contestStatus');
       const badge = document.getElementById('contestBadge');
-      const btnSubmitAll = document.getElementById('btnSubmitAll');
+      const btn = document.getElementById('btnSubmitAll');
 
-      if (readyCount > 0) {
-        badge.textContent = readyCount;
-        badge.style.display = 'flex';
-        btnSubmitAll.disabled = false;
-      } else {
-        badge.style.display = 'none';
-        btnSubmitAll.disabled = true;
-      }
+      statusEl.innerHTML = `<span style="color:var(--success)">&#10003;</span> ${contests.length} found`;
 
-      const status = document.getElementById('contestStatus');
-      status.textContent = `${readyCount} cuộc thi sẵn sàng`;
+      if (contests.length === 0) { el.innerHTML = '<div class="card-empty">No contests found</div>'; badge.style.display = 'none'; btn.disabled = true; return; }
+
+      badge.textContent = contests.length;
+      badge.style.display = '';
+      const ready = contests.filter(c => c.status !== 'SUBMITTED' && c.status !== 'CONTEST_SUBMITTED');
+      btn.disabled = ready.length === 0;
+
+      el.innerHTML = contests.map(c => {
+        const submitted = c.status === 'SUBMITTED' || c.status === 'CONTEST_SUBMITTED';
+        return `
+          <div class="card ${submitted ? 'submitted' : ''}">
+            <div class="card-platform"><span class="platform-dot contest"></span> Freelancer Contest</div>
+            ${submitted ? '<span class="card-status-badge submitted">Submitted</span>' : '<span class="card-status-badge new">New</span>'}
+            <div class="card-title">${c.title}</div>
+            <div class="card-meta"><span>Score: ${c.analysis?.score || 0}/100</span></div>
+            <div class="card-amount ${c.budget > 0 ? '' : 'zero'}">$${c.budget || 0}</div>
+            <button class="btn-card ${submitted ? 'submitted-btn' : 'contest-btn'}" onclick="${submitted ? '' : `autoSubmitContest('${c.id}')`}" ${submitted ? 'disabled' : ''}>
+              ${submitted ? 'Submitted' : 'Submit Entry'}
+            </button>
+          </div>`;
+      }).join('');
     }
 
-    // SUBMIT SINGLE CONTEST
-    async function submitContest(contestId) {
-      const contest = contests.find(c => c.id === contestId);
-      if (!contest) return;
-
-      if (!confirm(`Nộp bài thi: ${contest.title} ($${contest.budget})?`)) return;
-
+    async function autoSubmitContest(contestId) {
+      if (!confirm('Submit contest entry?')) return;
       try {
-        const res = await fetch(`${API_BASE}/contests/${contestId}/auto-submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            description: contest.analysis?.proposal || 'Professional design entry',
-          }),
-        });
-
+        const res = await fetch(`${API_BASE}/contests/${contestId}/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) {
-          showNotif(`✅ Nộp bài thành công: ${contest.title}`, 'success');
-          await loadContests();
-        } else {
-          showNotif(`❌ ${data.error || data.message}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Contest submitted!', 'success'); loadContests(); }
+        else { showNotif(data.error || data.message, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // SUBMIT ALL CONTESTS
     async function submitAllContests() {
-      const readyContests = contests.filter(c => c.status === 'CONTEST_READY');
-      if (readyContests.length === 0) {
-        showNotif('⚠️ Không có cuộc thi nào sẵn sàng', 'warning');
-        return;
-      }
-
-      if (!confirm(`Nộp bài cho ${readyContests.length} cuộc thi?`)) return;
-
+      if (!confirm('Submit all contests?')) return;
       try {
-        const res = await fetch(`${API_BASE}/contests/batch/auto-submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contestIds: readyContests.map(c => c.id),
-          }),
-        });
-
+        const res = await fetch(`${API_BASE}/contests/batch/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) {
-          showNotif(`✅ Nộp bài thành công: ${data.summary.successful}/${data.summary.total}`, 'success');
-          await loadContests();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif(`Submitted: ${data.submitted}/${data.total}`, 'success'); loadContests(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    function showNotif(msg, type = 'info') {
-      const notif = document.createElement('div');
-      notif.className = `notification ${type}`;
-      notif.textContent = msg;
-      document.body.appendChild(notif);
-      setTimeout(() => notif.remove(), 4000);
-    }
-
-    // LOAD GITHUB BOUNTIES
-    let bounties = [];
+    // GITHUB BOUNTIES
     async function loadGithubBounties() {
       try {
         const res = await fetch(`${API_BASE}/github`);
         const data = await res.json();
-
-        if (data.success) {
-          bounties = data.bounties || [];
-          renderGithubBounties();
-          updateGithubBadge();
-        }
-      } catch (e) {
-        console.error('❌ Error loading GitHub bounties:', e.message);
-      }
+        if (data.success) { renderGithubBounties(data.bounties || []); }
+      } catch (e) { /* silent */ }
     }
 
-    // RENDER GITHUB BOUNTIES
-    function renderGithubBounties() {
-      const list = document.getElementById('githubList');
-
-      if (!bounties || bounties.length === 0) {
-        list.innerHTML = '<div class="bounty-empty">📭 Chưa có bounties nào. Hệ thống sẽ tự động quét...</div>';
-        return;
-      }
-
-      const readyBounties = bounties.filter(b => b.status === 'SCANNED' || b.status === 'ANALYZED');
-      const submittedBounties = bounties.filter(b => b.status === 'SUBMITTED');
-
-      let html = '';
-
-      // Submitted bounties
-      if (submittedBounties.length > 0) {
-        submittedBounties.forEach(b => {
-          const platformEmoji = b.platform === 'github' ? '🐙' : b.platform === 'gitcoin' ? '💰' : '🎯';
-          html += `
-            <div class="bounty-card submitted">
-              <div class="bounty-badge submitted">✅ Submitted</div>
-              <div class="bounty-card-title">${b.title}</div>
-              <div class="bounty-card-meta">
-                <div>${platformEmoji} ${b.platform.toUpperCase()}</div>
-                <div>💰 $${b.budget}</div>
-                <div>📅 ${new Date(b.bid_placed_at).toLocaleDateString('vi-VN')}</div>
-              </div>
-              <button class="btn-bounty submitted" disabled>✅ Submitted</button>
-            </div>
-          `;
-        });
-      }
-
-      // Ready bounties
-      if (readyBounties.length > 0) {
-        readyBounties.forEach(b => {
-          const platformEmoji = b.platform === 'github' ? '🐙' : b.platform === 'gitcoin' ? '💰' : '🎯';
-          html += `
-            <div class="bounty-card">
-              <div class="bounty-badge">🆕 New</div>
-              <div class="bounty-card-title">${b.title}</div>
-              <div class="bounty-card-meta">
-                <div>${platformEmoji} ${b.platform.toUpperCase()}</div>
-                <div>🎯 ${(b.analysis?.score || 0)}/100</div>
-              </div>
-              <div class="bounty-card-amount">$${b.budget}</div>
-              <button class="btn-bounty" onclick="submitBounty('${b.id}')">🐙 Submit</button>
-            </div>
-          `;
-        });
-      }
-
-      list.innerHTML = html || '<div class="bounty-empty">📭 Không có bounties</div>';
-    }
-
-    // UPDATE GITHUB BADGE
-    function updateGithubBadge() {
-      const readyCount = bounties.filter(b => b.status === 'SCANNED' || b.status === 'ANALYZED').length;
+    function renderGithubBounties(bounties) {
+      const el = document.getElementById('githubList');
+      const statusEl = document.getElementById('githubStatus');
       const badge = document.getElementById('githubBadge');
-      const btnSubmitAll = document.getElementById('btnSubmitAllBounties');
+      const btn = document.getElementById('btnSubmitAllBounties');
 
-      if (readyCount > 0) {
-        badge.textContent = readyCount;
-        badge.style.display = 'flex';
-        btnSubmitAll.disabled = false;
-      } else {
-        badge.style.display = 'none';
-        btnSubmitAll.disabled = true;
-      }
+      statusEl.innerHTML = `<span style="color:var(--success)">&#10003;</span> ${bounties.length} found`;
+      document.getElementById('totalBountiesStat').textContent = `${bounties.length} bounties`;
 
-      const status = document.getElementById('githubStatus');
-      status.textContent = `${readyCount} bounties sẵn sàng`;
+      if (bounties.length === 0) { el.innerHTML = '<div class="card-empty">No bounties found yet</div>'; badge.style.display = 'none'; btn.disabled = true; return; }
+
+      badge.textContent = bounties.length;
+      badge.style.display = '';
+      const ready = bounties.filter(b => b.status !== 'SUBMITTED');
+      btn.disabled = ready.length === 0;
+
+      el.innerHTML = bounties.map(b => {
+        const submitted = b.status === 'SUBMITTED';
+        const platform = b.bounty_platform || 'github';
+        const platformLabels = { github: 'GitHub', gitcoin: 'Gitcoin', algora: 'Algora' };
+        const score = b.analysis?.score || 0;
+        const scoreClass = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
+
+        return `
+          <div class="card ${submitted ? 'submitted' : ''}">
+            <div class="card-platform"><span class="platform-dot ${platform}"></span> ${platformLabels[platform] || 'GitHub'}</div>
+            ${submitted ? '<span class="card-status-badge submitted">Submitted</span>' : '<span class="card-status-badge new">New</span>'}
+            <div class="card-title">${b.title}</div>
+            <div class="card-meta">
+              ${b.github_repo ? `<span>${b.github_repo}</span>` : ''}
+            </div>
+            <div class="card-amount ${b.budget > 0 ? '' : 'zero'}">${b.budget > 0 ? '$' + b.budget : 'TBD'}</div>
+            <div class="card-score">
+              <div class="score-bar"><div class="score-fill ${scoreClass}" style="width:${score}%"></div></div>
+              <span class="score-label">${score}/100</span>
+            </div>
+            <button class="btn-card ${submitted ? 'submitted-btn' : 'github-btn'}" onclick="${submitted ? '' : `submitBounty('${b.id}')`}" ${submitted ? 'disabled' : ''}>
+              ${submitted ? 'Submitted' : 'Submit'}
+            </button>
+          </div>`;
+      }).join('');
     }
 
-    // SUBMIT SINGLE BOUNTY
     async function submitBounty(bountyId) {
-      const bounty = bounties.find(b => b.id === bountyId);
-      if (!bounty) return;
-
-      if (!confirm(`Submit bounty: ${bounty.title} ($${bounty.budget})?`)) return;
-
+      if (!confirm('Submit this bounty?')) return;
       try {
-        const res = await fetch(`${API_BASE}/github/${bountyId}/auto-submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            comment: null, // Use default comment
-          }),
-        });
-
+        const res = await fetch(`${API_BASE}/github/${bountyId}/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) {
-          showNotif(`✅ Bounty submitted: ${bounty.title}`, 'success');
-          await loadGithubBounties();
-        } else {
-          showNotif(`❌ ${data.error || data.message}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif('Bounty submitted!', 'success'); loadGithubBounties(); }
+        else { showNotif(data.error || data.message, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // SUBMIT ALL BOUNTIES
     async function submitAllBounties() {
-      const readyBounties = bounties.filter(b => b.status === 'SCANNED' || b.status === 'ANALYZED');
-      if (readyBounties.length === 0) {
-        showNotif('⚠️ Không có bounties nào sẵn sàng', 'warning');
-        return;
-      }
-
-      if (!confirm(`Submit ${readyBounties.length} bounties?`)) return;
-
+      if (!confirm('Submit all bounties?')) return;
       try {
-        const res = await fetch(`${API_BASE}/github/batch/auto-submit`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            bountyIds: readyBounties.map(b => b.id),
-          }),
-        });
-
+        const res = await fetch(`${API_BASE}/github/batch/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) {
-          showNotif(`✅ Submitted: ${data.summary.successful}/${data.summary.total}`, 'success');
-          await loadGithubBounties();
-        } else {
-          showNotif(`❌ ${data.error}`, 'error');
-        }
-      } catch (e) {
-        showNotif(`❌ ${e.message}`, 'error');
-      }
+        if (data.success) { showNotif(`Submitted: ${data.submitted}/${data.total}`, 'success'); loadGithubBounties(); }
+        else { showNotif(data.error, 'error'); }
+      } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // LOAD ON START
+    // INIT
     window.addEventListener('load', () => {
       connectWebSocket();
       loadJobs();
       loadContests();
       loadGithubBounties();
-
-      // Auto-refresh every 30 seconds
       setInterval(loadContests, 30000);
       setInterval(loadGithubBounties, 30000);
     });
