@@ -231,9 +231,24 @@ I'll update the PR shortly.`;
     this.pollingInterval = setInterval(async () => {
       for (const [bountyId] of this.trackedIssues) {
         try {
+          const tracked = this.trackedIssues.get(bountyId);
           const feedbackResult = await this.checkFeedback(bountyId);
           if (feedbackResult.hasNewFeedback) {
             console.log(`📬 New feedback for ${bountyId}: ${feedbackResult.feedback.length} comment(s)`);
+
+            // Broadcast to dashboard
+            if (global.broadcast) {
+              for (const fb of feedbackResult.feedback) {
+                global.broadcast({
+                  type: 'FEEDBACK_RECEIVED',
+                  bountyId,
+                  repo: `${tracked.owner}/${tracked.repo}`,
+                  issue: tracked.issueNumber,
+                  category: fb.type,
+                  author: fb.author,
+                });
+              }
+            }
 
             // Auto-respond to each feedback
             for (const fb of feedbackResult.feedback) {
@@ -245,9 +260,38 @@ I'll update the PR shortly.`;
           const prStatus = await this.checkPRStatus(bountyId);
           if (prStatus?.merged) {
             console.log(`✅ PR merged for ${bountyId}!`);
+
+            // Broadcast merge event
+            if (global.broadcast) {
+              global.broadcast({
+                type: 'PR_MERGED',
+                bountyId,
+                repo: `${tracked.owner}/${tracked.repo}`,
+                prNumber: tracked.prNumber,
+              });
+            }
+
             await run(
               'UPDATE jobs SET status = ?, completed_at = CURRENT_TIMESTAMP WHERE id = ?',
               ['COMPLETED', bountyId]
+            );
+            this.trackedIssues.delete(bountyId);
+          } else if (prStatus?.state === 'closed' && !prStatus?.merged) {
+            console.log(`❌ PR rejected/closed for ${bountyId}`);
+
+            // Broadcast rejection event
+            if (global.broadcast) {
+              global.broadcast({
+                type: 'PR_REJECTED',
+                bountyId,
+                repo: `${tracked.owner}/${tracked.repo}`,
+                prNumber: tracked.prNumber,
+              });
+            }
+
+            await run(
+              'UPDATE jobs SET status = ? WHERE id = ?',
+              ['REJECTED', bountyId]
             );
             this.trackedIssues.delete(bountyId);
           }

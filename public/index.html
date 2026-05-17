@@ -911,16 +911,32 @@
       </div>
     </div>
 
+    <!-- FEEDBACK TRACKING PANEL -->
+    <div class="bottom-panel" style="grid-column: 1 / -1;">
+      <div class="bottom-panel-header">
+        <div class="title-group">
+          <h3>📬 Theo Dõi Phản Hồi GitHub</h3>
+          <span class="count-badge" id="feedbackBadge" style="display:none; background: #8b5cf6;">0</span>
+        </div>
+        <div class="actions">
+          <button class="btn-ghost btn-sm" onclick="loadFeedbackTracking()">Làm mới</button>
+        </div>
+      </div>
+      <div class="panel-table-wrap" id="feedbackPanel">
+        <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+      </div>
+    </div>
+
     <!-- AUTONOMOUS WORK CONTROL PANEL -->
     <div class="bottom-panel" style="grid-column: 1 / -1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);">
       <div class="bottom-panel-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
         <div class="title-group">
           <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
             <span style="font-size: 24px;">🤖</span>
-            <span>Tự Động Xử Lý Công Việc</span>
+            <span>Tự Động Xử Lý Công Việc (Smart Pipeline)</span>
             <span class="count-badge" id="autoworkBadge" style="display:none; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">0</span>
           </h3>
-          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 4px;">Hệ thống AI tự động phân tích, nhận việc, code và nộp PR</p>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 4px;">Phân tích sâu, sinh code thực, theo dõi phản hồi, tự động xử lý bounty &lt;$10</p>
         </div>
         <div class="actions">
           <button class="btn-sm" onclick="startAutoworkPipeline()" id="btnStartAutowork" style="background: white; color: #667eea; font-weight: 600; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
@@ -1014,6 +1030,18 @@
       } else if (data.type === 'AUTOWORK_BATCH_STARTED') {
         showNotif(`Bắt đầu xử lý ${data.count} bounty`, 'info');
         loadAutoworkStatus();
+      } else if (data.type === 'FEEDBACK_RECEIVED') {
+        showNotif(`📬 Phản hồi mới: ${data.repo}#${data.issue} - ${data.category || 'general'}`, 'info');
+        loadFeedbackTracking();
+        loadAutoworkStatus();
+      } else if (data.type === 'PR_MERGED') {
+        showNotif(`🎉 PR đã được merge: ${data.repo}#${data.prNumber}`, 'success');
+        loadFeedbackTracking();
+        loadAutoworkStatus();
+        loadAutoworkHistory();
+      } else if (data.type === 'PR_REJECTED') {
+        showNotif(`❌ PR bị từ chối: ${data.repo}#${data.prNumber}`, 'warning');
+        loadFeedbackTracking();
       }
     }
 
@@ -1753,6 +1781,58 @@
       el.innerHTML = html;
     }
 
+    // FEEDBACK TRACKING
+    async function loadFeedbackTracking() {
+      try {
+        const res = await fetch(`${API_BASE}/autowork/feedback`);
+        const data = await res.json();
+        if (data.success) { renderFeedbackTracking(data.tracking || []); }
+      } catch (e) { /* im lặng */ }
+    }
+
+    function renderFeedbackTracking(tracking) {
+      const el = document.getElementById('feedbackPanel');
+      const badge = document.getElementById('feedbackBadge');
+
+      if (tracking.length === 0) {
+        el.innerHTML = '<div class="card-empty">Chưa theo dõi phản hồi nào. Nhấn "▶️ Bắt Đầu" ở Autowork để bắt đầu.</div>';
+        badge.style.display = 'none';
+        return;
+      }
+
+      badge.textContent = tracking.length;
+      badge.style.display = '';
+
+      const html = `
+        <div style="padding: 16px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px;">
+            ${tracking.map(t => {
+              const feedbackColor = t.feedbackCount > 0 ? 'var(--success)' : 'var(--warning)';
+              const feedbackText = t.feedbackCount > 0 ? `${t.feedbackCount} phản hồi` : 'Chưa có phản hồi';
+              const lastChecked = t.lastChecked ? new Date(t.lastChecked).toLocaleTimeString('vi-VN') : 'N/A';
+              return `
+                <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; transition: all 0.2s;">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <div style="font-weight: 600; font-size: 13px; color: var(--text);">${t.repo}</div>
+                    <span style="background: ${feedbackColor}22; color: ${feedbackColor}; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;">${feedbackText}</span>
+                  </div>
+                  <div style="display: flex; gap: 12px; font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
+                    <span>Issue #${t.issue}</span>
+                    ${t.pr ? `<span>PR #${t.pr}</span>` : ''}
+                  </div>
+                  <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; color: var(--text-muted);">Kiểm tra: ${lastChecked}</span>
+                    <button class="btn-ghost btn-sm" onclick="window.open('https://github.com/${t.repo}/issues/${t.issue}', '_blank')" style="font-size: 10px;">Xem Issue →</button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      `;
+      el.innerHTML = html;
+    }
+
     // AUTOWORK FUNCTIONS
     async function startAutoworkPipeline() {
       const btn = document.getElementById('btnStartAutowork');
@@ -1821,12 +1901,14 @@
 
     async function loadAutoworkStatus() {
       try {
-        const [statusRes, historyRes] = await Promise.all([
+        const [statusRes, historyRes, feedbackRes] = await Promise.all([
           fetch(`${API_BASE}/autowork/status`),
           fetch(`${API_BASE}/autowork/history`).catch(() => null),
+          fetch(`${API_BASE}/autowork/feedback`).catch(() => null),
         ]);
         const statusData = await statusRes.json();
         const historyData = historyRes ? await historyRes.json() : { success: false };
+        const feedbackData = feedbackRes ? await feedbackRes.json() : { success: false };
 
         const el = document.getElementById('autoworkPanel');
         if (!statusData.success) {
@@ -1834,15 +1916,16 @@
           return;
         }
 
-        const { activeJobs, jobs } = statusData;
+        const { activeJobs, jobs, trackedIssues } = statusData;
         const history = historyData.success ? historyData.history || [] : [];
         const summary = historyData.success ? historyData.summary || {} : {};
+        const tracking = feedbackData.success ? feedbackData.tracking || [] : [];
 
         let html = '';
 
         // Summary cards
         html += `
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
             <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
               <div style="font-size: 28px; font-weight: 700; color: white;">${activeJobs}</div>
               <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">⚙️ Đang Xử Lý</div>
@@ -1860,6 +1943,10 @@
               <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">🔄 Đang Tiến Hành</div>
             </div>
             <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: #c084fc;">${tracking.length}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">📬 Đang Theo Dõi</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
               <div style="font-size: 28px; font-weight: 700; color: #34d399;">$${summary.totalEarnings || 0}</div>
               <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">💰 Tổng Thu Nhập</div>
             </div>
@@ -1867,16 +1954,17 @@
         `;
 
         // Active jobs section
-        if (activeJobs > 0 && jobs.length > 0) {
+        if (activeJobs > 0 && jobs && jobs.length > 0) {
           html += `<h4 style="color: white; margin-bottom: 12px; font-size: 14px;">⚡ Công Việc Đang Xử Lý</h4>`;
           html += `<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">`;
           jobs.forEach(job => {
             const statusMap = {
-              'analyzing': { emoji: '📊', label: 'Phân tích', color: '#60a5fa' },
+              'validating': { emoji: '🔍', label: 'Xác thực', color: '#60a5fa' },
+              'analyzing': { emoji: '📊', label: 'Phân tích sâu', color: '#60a5fa' },
               'accepting': { emoji: '✅', label: 'Nhận việc', color: '#4ade80' },
-              'generating': { emoji: '🔧', label: 'Tạo code', color: '#fbbf24' },
-              'executing': { emoji: '⚙️', label: 'Thực thi', color: '#f97316' },
-              'monitoring': { emoji: '👀', label: 'Giám sát', color: '#a78bfa' },
+              'generating': { emoji: '🔧', label: 'Sinh code thực', color: '#fbbf24' },
+              'executing': { emoji: '⚙️', label: 'Thực thi Git', color: '#f97316' },
+              'tracking': { emoji: '📬', label: 'Theo dõi phản hồi', color: '#c084fc' },
               'completed': { emoji: '✨', label: 'Hoàn thành', color: '#34d399' },
               'failed': { emoji: '❌', label: 'Thất bại', color: '#f87171' },
             };
@@ -1893,6 +1981,29 @@
                   </div>
                 </div>
                 <div style="color: rgba(255,255,255,0.7); font-size: 12px;">${durationSec}s</div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+
+        // Tracked feedback section
+        if (tracking.length > 0) {
+          html += `<h4 style="color: white; margin-bottom: 12px; font-size: 14px;">📬 Đang Theo Dõi Phản Hồi</h4>`;
+          html += `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 20px;">`;
+          tracking.forEach(t => {
+            const fbColor = t.feedbackCount > 0 ? '#4ade80' : '#fbbf24';
+            const fbLabel = t.feedbackCount > 0 ? `${t.feedbackCount} phản hồi` : 'Chờ phản hồi';
+            html += `
+              <div style="background: rgba(255,255,255,0.08); border-radius: 10px; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.12);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <span style="color: white; font-weight: 600; font-size: 13px;">${t.repo}</span>
+                  <span style="background: ${fbColor}33; color: ${fbColor}; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600;">${fbLabel}</span>
+                </div>
+                <div style="color: rgba(255,255,255,0.6); font-size: 11px; display: flex; gap: 10px;">
+                  <span>Issue #${t.issue}</span>
+                  ${t.pr ? `<span>PR #${t.pr}</span>` : ''}
+                </div>
               </div>
             `;
           });
@@ -1942,7 +2053,10 @@
                 <td style="padding: 10px 14px; color: #34d399; font-weight: 600; text-align: right;">$${job.budget || 0}</td>
                 <td style="padding: 10px 14px; text-align: center;">${statusBadge}</td>
                 <td style="padding: 10px 14px; text-align: center;">
-                  <button onclick="processAutoworkBounty('${job.id}')" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 11px;">⚡ Xử lý</button>
+                  <div style="display: flex; gap: 4px; justify-content: center;">
+                    <button onclick="analyzeAutoworkBounty('${job.id}')" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 10px;" title="Phân tích sâu">📊</button>
+                    <button onclick="processAutoworkBounty('${job.id}')" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 10px;" title="Xử lý đầy đủ">⚡</button>
+                  </div>
                 </td>
               </tr>
             `;
@@ -1959,9 +2073,14 @@
           html += `
             <div style="text-align: center; padding: 40px 20px;">
               <div style="font-size: 48px; margin-bottom: 16px;">🤖</div>
-              <div style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px;">Sẵn sàng làm việc</div>
-              <div style="color: rgba(255,255,255,0.7); font-size: 13px; max-width: 400px; margin: 0 auto;">
-                Nhấn <strong>"▶️ Bắt Đầu"</strong> để hệ thống tự động quét, phân tích, nhận việc và tạo Pull Request cho các bounty phù hợp.
+              <div style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px;">Smart Pipeline Sẵn Sàng</div>
+              <div style="color: rgba(255,255,255,0.7); font-size: 13px; max-width: 500px; margin: 0 auto; line-height: 1.6;">
+                Nhấn <strong>"▶️ Bắt Đầu"</strong> để hệ thống:<br>
+                🔍 Lọc bounty có budget (ẩn request không có tiền)<br>
+                📊 Phân tích sâu issue + comments GitHub<br>
+                🔧 Sinh code thực dựa trên yêu cầu cụ thể<br>
+                📬 Theo dõi phản hồi và tự động trả lời<br>
+                ⚡ Tự động xử lý bounty &lt;$10 không cần giám sát
               </div>
             </div>
           `;
@@ -1974,6 +2093,11 @@
           document.getElementById('autoworkBadge').style.display = 'inline-block';
         } else {
           document.getElementById('autoworkBadge').style.display = 'none';
+        }
+
+        // Also update feedback panel
+        if (feedbackData.success) {
+          renderFeedbackTracking(feedbackData.tracking || []);
         }
       } catch (err) {
         console.error('Error loading autowork status:', err);
@@ -2005,6 +2129,7 @@
       loadCryptoSummary();
       loadSubmittedBounties();
       loadAutoworkStatus();
+      loadFeedbackTracking();
       setInterval(loadContests, 30000);
       setInterval(loadGithubBounties, 30000);
       setInterval(loadQualifiedBounties, 60000);
@@ -2012,6 +2137,7 @@
       setInterval(loadCryptoSummary, 60000);
       setInterval(loadSubmittedBounties, 60000);
       setInterval(loadAutoworkStatus, 10000);
+      setInterval(loadFeedbackTracking, 30000);
     });
   </script>
 </body>
