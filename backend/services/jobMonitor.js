@@ -1,5 +1,6 @@
 const { getThreads, getMessages, getProjectDetails, searchContests } = require('./freelancerAPI');
 const { generateAutoReply, analyzeJob } = require('./jobAnalyzer');
+const { GitHubScanner } = require('./githubScanner');
 const { run, all, get } = require('../db/database');
 
 class JobMonitor {
@@ -7,6 +8,7 @@ class JobMonitor {
     this.isMonitoring = false;
     this.lastCheckTime = null;
     this.checkCount = 0;
+    this.githubScanner = new GitHubScanner();
   }
 
   /**
@@ -319,6 +321,20 @@ class JobMonitor {
   }
 
   /**
+   * Auto-scan GitHub, Gitcoin, Algora for bounties
+   */
+  async autoScanGitHub() {
+    try {
+      console.log('🐙 Auto-scanning GitHub bounties...');
+      const result = await this.githubScanner.scanBounties();
+      return { newBounties: result.new || 0, scanned: result.scanned || 0 };
+    } catch (err) {
+      console.error('❌ Error scanning GitHub bounties:', err.message);
+      return { newBounties: 0, error: err.message };
+    }
+  }
+
+  /**
    * Run full monitoring cycle
    */
   async runMonitoringCycle() {
@@ -342,9 +358,12 @@ class JobMonitor {
       // Auto-scan for contests
       const { newContests } = await this.autoScanContests();
 
+      // Auto-scan GitHub bounties
+      const { newBounties } = await this.autoScanGitHub();
+
       this.lastCheckTime = new Date();
 
-      console.log(`✅ Monitoring cycle complete: ${newMessages} messages, ${newAwards} awards, ${newContests} contests\n`);
+      console.log(`✅ Monitoring cycle complete: ${newMessages} messages, ${newAwards} awards, ${newContests} contests, ${newBounties} bounties\n`);
 
       // Broadcast monitoring status
       if (global.broadcast) {
@@ -354,6 +373,7 @@ class JobMonitor {
           newMessages,
           newAwards,
           newContests,
+          newBounties,
           checkCount: this.checkCount,
         });
       }

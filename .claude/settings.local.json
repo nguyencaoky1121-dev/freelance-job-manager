@@ -54,7 +54,9 @@
       "Bash(curl -s -X PUT -H 'Authorization: Bearer f3MCgrdZ3BSQQRKQ2XP3MzR6NS4pzp' -H 'Content-Type: application/json' -d '{\"search_languages\": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]}' https://www.freelancer.com/api/users/0.1/users/self/)",
       "Bash(node -c backend/services/jobMonitor.js)",
       "Bash(node -c backend/routes/monitor.js)",
-      "Bash(node -c backend/server.js)"
+      "Bash(node -c backend/server.js)",
+      "Bash(timeout 5)",
+      "Bash(ping -n 6 127.0.0.1)"
     ]
   }
 }

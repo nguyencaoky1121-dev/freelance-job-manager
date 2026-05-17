@@ -293,6 +293,142 @@
       font-size: 14px;
       width: 100%;
     }
+
+    /* GitHub Bounties Panel Styles */
+    .github-bar {
+      max-width: 1400px;
+      margin: 15px auto 0;
+    }
+
+    .github-panel {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    .github-header {
+      background: linear-gradient(135deg, #24292e 0%, #1f6feb 100%);
+      color: white;
+      padding: 15px 20px;
+      font-weight: 600;
+      font-size: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .github-content {
+      padding: 15px 20px;
+      display: flex;
+      gap: 15px;
+      overflow-x: auto;
+    }
+
+    .bounty-card {
+      flex: 0 0 280px;
+      background: #f6f8fa;
+      border: 2px solid #30363d;
+      border-radius: 8px;
+      padding: 15px;
+      position: relative;
+    }
+
+    .bounty-card.submitted {
+      border-color: #238636;
+      background: #0d3920;
+    }
+
+    .bounty-card-title {
+      font-weight: 600;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #24292e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .bounty-card.submitted .bounty-card-title {
+      color: #7ee787;
+    }
+
+    .bounty-card-meta {
+      font-size: 11px;
+      color: #57606a;
+      margin-bottom: 10px;
+    }
+
+    .bounty-card.submitted .bounty-card-meta {
+      color: #8ddb8c;
+    }
+
+    .bounty-card-amount {
+      font-weight: 700;
+      color: #1f6feb;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .bounty-card.submitted .bounty-card-amount {
+      color: #58a6ff;
+    }
+
+    .btn-bounty {
+      background: #238636;
+      color: white;
+      width: 100%;
+      padding: 10px;
+      font-size: 13px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-bounty:hover { background: #2ea043; }
+
+    .btn-bounty.submitted {
+      background: #1f6feb;
+      cursor: default;
+    }
+
+    .btn-bounty-all {
+      background: #238636;
+      color: white;
+      padding: 8px 16px;
+      font-size: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-bounty-all:hover { background: #2ea043; }
+
+    .bounty-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #1f6feb;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+    }
+
+    .bounty-badge.submitted {
+      background: #238636;
+    }
+
+    .bounty-empty {
+      text-align: center;
+      padding: 20px;
+      color: #57606a;
+      font-size: 14px;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -353,6 +489,23 @@
       </div>
       <div class="contest-content" id="contestList">
         <div class="contest-empty">⏳ Đang tự động quét cuộc thi... Hệ thống sẽ tìm và hiển thị cuộc thi phù hợp</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GITHUB BOUNTIES PANEL - Auto-scan & One-click Submit -->
+  <div class="github-bar">
+    <div class="github-panel">
+      <div class="github-header">
+        🐙 GitHub Bounties <span id="githubBadge" class="alert-badge" style="display: none;">0</span>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span id="githubStatus" style="font-size: 11px; opacity: 0.8;">Đang quét...</span>
+          <button class="btn-bounty-all" onclick="submitAllBounties()" id="btnSubmitAllBounties" disabled>📤 Nộp Tất Cả</button>
+          <button class="btn-bounty-all" onclick="loadGithubBounties()" style="background: #1f6feb;">🔄 Làm Mới</button>
+        </div>
+      </div>
+      <div class="github-content" id="githubList">
+        <div class="bounty-empty">⏳ Đang tự động quét GitHub, Gitcoin, Algora... Hệ thống sẽ tìm và hiển thị bounties phù hợp</div>
       </div>
     </div>
   </div>
@@ -424,6 +577,18 @@
       } else if (data.type === 'CONTEST_SUBMITTED') {
         showNotif(`✅ Đã nộp bài: ${data.title}`, 'success');
         loadContests();
+      } else if (data.type === 'NEW_GITHUB_BOUNTY') {
+        showNotif(`🐙 GitHub bounty mới: ${data.bounty.title} ($${data.bounty.budget})`, 'info');
+        loadGithubBounties();
+      } else if (data.type === 'NEW_GITCOIN_BOUNTY') {
+        showNotif(`💰 Gitcoin bounty mới: ${data.bounty.title} ($${data.bounty.budget})`, 'info');
+        loadGithubBounties();
+      } else if (data.type === 'NEW_ALGORA_BOUNTY') {
+        showNotif(`🎯 Algora bounty mới: ${data.bounty.title} ($${data.bounty.budget})`, 'info');
+        loadGithubBounties();
+      } else if (data.type === 'GITHUB_BOUNTY_SUBMITTED') {
+        showNotif(`✅ Đã submit GitHub bounty: ${data.title}`, 'success');
+        loadGithubBounties();
       } else if (data.type === 'NEW_MESSAGE') {
         newMessagesCount++;
         updateMessagesBadge();
@@ -1096,14 +1261,166 @@
       setTimeout(() => notif.remove(), 4000);
     }
 
+    // LOAD GITHUB BOUNTIES
+    let bounties = [];
+    async function loadGithubBounties() {
+      try {
+        const res = await fetch(`${API_BASE}/github`);
+        const data = await res.json();
+
+        if (data.success) {
+          bounties = data.bounties || [];
+          renderGithubBounties();
+          updateGithubBadge();
+        }
+      } catch (e) {
+        console.error('❌ Error loading GitHub bounties:', e.message);
+      }
+    }
+
+    // RENDER GITHUB BOUNTIES
+    function renderGithubBounties() {
+      const list = document.getElementById('githubList');
+
+      if (!bounties || bounties.length === 0) {
+        list.innerHTML = '<div class="bounty-empty">📭 Chưa có bounties nào. Hệ thống sẽ tự động quét...</div>';
+        return;
+      }
+
+      const readyBounties = bounties.filter(b => b.status === 'SCANNED' || b.status === 'ANALYZED');
+      const submittedBounties = bounties.filter(b => b.status === 'SUBMITTED');
+
+      let html = '';
+
+      // Submitted bounties
+      if (submittedBounties.length > 0) {
+        submittedBounties.forEach(b => {
+          const platformEmoji = b.platform === 'github' ? '🐙' : b.platform === 'gitcoin' ? '💰' : '🎯';
+          html += `
+            <div class="bounty-card submitted">
+              <div class="bounty-badge submitted">✅ Submitted</div>
+              <div class="bounty-card-title">${b.title}</div>
+              <div class="bounty-card-meta">
+                <div>${platformEmoji} ${b.platform.toUpperCase()}</div>
+                <div>💰 $${b.budget}</div>
+                <div>📅 ${new Date(b.bid_placed_at).toLocaleDateString('vi-VN')}</div>
+              </div>
+              <button class="btn-bounty submitted" disabled>✅ Submitted</button>
+            </div>
+          `;
+        });
+      }
+
+      // Ready bounties
+      if (readyBounties.length > 0) {
+        readyBounties.forEach(b => {
+          const platformEmoji = b.platform === 'github' ? '🐙' : b.platform === 'gitcoin' ? '💰' : '🎯';
+          html += `
+            <div class="bounty-card">
+              <div class="bounty-badge">🆕 New</div>
+              <div class="bounty-card-title">${b.title}</div>
+              <div class="bounty-card-meta">
+                <div>${platformEmoji} ${b.platform.toUpperCase()}</div>
+                <div>🎯 ${(b.analysis?.score || 0)}/100</div>
+              </div>
+              <div class="bounty-card-amount">$${b.budget}</div>
+              <button class="btn-bounty" onclick="submitBounty('${b.id}')">🐙 Submit</button>
+            </div>
+          `;
+        });
+      }
+
+      list.innerHTML = html || '<div class="bounty-empty">📭 Không có bounties</div>';
+    }
+
+    // UPDATE GITHUB BADGE
+    function updateGithubBadge() {
+      const readyCount = bounties.filter(b => b.status === 'SCANNED' || b.status === 'ANALYZED').length;
+      const badge = document.getElementById('githubBadge');
+      const btnSubmitAll = document.getElementById('btnSubmitAllBounties');
+
+      if (readyCount > 0) {
+        badge.textContent = readyCount;
+        badge.style.display = 'flex';
+        btnSubmitAll.disabled = false;
+      } else {
+        badge.style.display = 'none';
+        btnSubmitAll.disabled = true;
+      }
+
+      const status = document.getElementById('githubStatus');
+      status.textContent = `${readyCount} bounties sẵn sàng`;
+    }
+
+    // SUBMIT SINGLE BOUNTY
+    async function submitBounty(bountyId) {
+      const bounty = bounties.find(b => b.id === bountyId);
+      if (!bounty) return;
+
+      if (!confirm(`Submit bounty: ${bounty.title} ($${bounty.budget})?`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/github/${bountyId}/auto-submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            comment: null, // Use default comment
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showNotif(`✅ Bounty submitted: ${bounty.title}`, 'success');
+          await loadGithubBounties();
+        } else {
+          showNotif(`❌ ${data.error || data.message}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
+    }
+
+    // SUBMIT ALL BOUNTIES
+    async function submitAllBounties() {
+      const readyBounties = bounties.filter(b => b.status === 'SCANNED' || b.status === 'ANALYZED');
+      if (readyBounties.length === 0) {
+        showNotif('⚠️ Không có bounties nào sẵn sàng', 'warning');
+        return;
+      }
+
+      if (!confirm(`Submit ${readyBounties.length} bounties?`)) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/github/batch/auto-submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bountyIds: readyBounties.map(b => b.id),
+          }),
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          showNotif(`✅ Submitted: ${data.summary.successful}/${data.summary.total}`, 'success');
+          await loadGithubBounties();
+        } else {
+          showNotif(`❌ ${data.error}`, 'error');
+        }
+      } catch (e) {
+        showNotif(`❌ ${e.message}`, 'error');
+      }
+    }
+
     // LOAD ON START
     window.addEventListener('load', () => {
       connectWebSocket();
       loadJobs();
       loadContests();
+      loadGithubBounties();
 
-      // Auto-refresh contests every 30 seconds
+      // Auto-refresh every 30 seconds
       setInterval(loadContests, 30000);
+      setInterval(loadGithubBounties, 30000);
     });
   </script>
 </body>
