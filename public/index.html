@@ -602,15 +602,14 @@
   <!-- HEADER -->
   <header class="app-header">
     <div class="app-logo">
-      <div class="icon">F</div>
-      Freelance Manager
+      <div class="icon">💼</div>
+      Quản Lý Freelance
     </div>
     <div class="header-stats">
-      <div class="stat-pill">
-        <span class="dot online" id="monitoringDot"></span>
-        <span id="monitoringStatus">Live</span>
+      <div class="stat-pill" id="monitoringDot"></span>
+        <span id="monitoringStatus">Đang hoạt động</span>
       </div>
-      <div class="stat-pill" id="totalJobsStat">0 jobs</div>
+      <div class="stat-pill" id="totalJobsStat">0 công việc</div>
       <div class="stat-pill" id="totalBountiesStat">0 bounties</div>
     </div>
   </header>
@@ -624,43 +623,43 @@
       <!-- LEFT: Jobs List -->
       <div class="panel">
         <div class="panel-header">
-          Jobs
+          Công Việc
           <div class="header-controls">
             <select id="jobFilter" onchange="filterJobs()">
-              <option value="all">All</option>
-              <option value="not_applied">New</option>
-              <option value="applied">Applied</option>
+              <option value="all">Tất cả</option>
+              <option value="not_applied">Mới</option>
+              <option value="applied">Đã apply</option>
             </select>
-            <button class="btn-primary btn-sm" onclick="scanJobs()">Scan</button>
+            <button class="btn-primary btn-sm" onclick="scanJobs()">Quét</button>
           </div>
         </div>
         <div class="panel-content" id="jobsList">
-          <div class="empty"><div class="empty-icon">📭</div><p>Click Scan to find jobs</p></div>
+          <div class="empty"><div class="empty-icon">📭</div><p>Nhấn Quét để tìm công việc</p></div>
         </div>
       </div>
 
       <!-- CENTER: Job Details -->
       <div class="panel">
         <div class="panel-header">
-          Details
+          Chi Tiết
           <div class="stat-pill btn-sm">
             <span class="dot online" id="monitoringDot2"></span>
-            Monitoring
+            Giám sát
           </div>
         </div>
         <div class="panel-content" id="jobDetails">
-          <div class="empty"><div class="empty-icon">👈</div><p>Select a job to view details</p></div>
+          <div class="empty"><div class="empty-icon">👈</div><p>Chọn công việc để xem chi tiết</p></div>
         </div>
       </div>
 
       <!-- RIGHT: Actions -->
       <div class="panel">
         <div class="panel-header">
-          Actions
+          Hành Động
           <span class="badge" id="newMessagesBadge" style="display: none;">0</span>
         </div>
         <div class="panel-content" id="actionsPanel">
-          <div class="empty"><div class="empty-icon">⏳</div><p>Select a job</p></div>
+          <div class="empty"><div class="empty-icon">⏳</div><p>Chọn công việc</p></div>
         </div>
       </div>
     </div>
@@ -669,19 +668,19 @@
     <div class="bottom-panel">
       <div class="bottom-panel-header">
         <div class="title-group">
-          <h3>Contests</h3>
+          <h3>Cuộc Thi</h3>
           <span class="count-badge contest" id="contestBadge" style="display:none;">0</span>
         </div>
         <div class="actions">
           <span class="scan-status" id="contestStatus">
-            <span class="spinner"></span> Scanning...
+            <span class="spinner"></span> Đang quét...
           </span>
-          <button class="btn-ghost btn-sm" onclick="loadContests()">Refresh</button>
-          <button class="btn-primary btn-sm" onclick="submitAllContests()" id="btnSubmitAll" disabled>Submit All</button>
+          <button class="btn-ghost btn-sm" onclick="loadContests()">Làm mới</button>
+          <button class="btn-primary btn-sm" onclick="submitAllContests()" id="btnSubmitAll" disabled>Nộp tất cả</button>
         </div>
       </div>
       <div class="card-scroll" id="contestList">
-        <div class="card-empty"><span class="spinner"></span> Auto-scanning contests...</div>
+        <div class="card-empty"><span class="spinner"></span> Đang tự động quét cuộc thi...</div>
       </div>
     </div>
 
@@ -694,14 +693,14 @@
         </div>
         <div class="actions">
           <span class="scan-status" id="githubStatus">
-            <span class="spinner"></span> Scanning...
+            <span class="spinner"></span> Đang quét...
           </span>
-          <button class="btn-ghost btn-sm" onclick="loadGithubBounties()">Refresh</button>
-          <button class="btn-success btn-sm" onclick="submitAllBounties()" id="btnSubmitAllBounties" disabled>Submit All</button>
+          <button class="btn-ghost btn-sm" onclick="loadGithubBounties()">Làm mới</button>
+          <button class="btn-success btn-sm" onclick="submitAllBounties()" id="btnSubmitAllBounties" disabled>Nộp tất cả</button>
         </div>
       </div>
       <div class="card-scroll" id="githubList">
-        <div class="card-empty"><span class="spinner"></span> Auto-scanning GitHub, Gitcoin, Algora...</div>
+        <div class="card-empty"><span class="spinner"></span> Đang tự động quét GitHub, Gitcoin, Algora...</div>
       </div>
     </div>
 
@@ -738,16 +737,16 @@
     function handleWebSocketMessage(data) {
       if (data.type === 'NEW_JOB') {
         newJobsCount++;
-        showNotif(`New job: ${data.job.title}`, 'info');
+        showNotif(`Công việc mới: ${data.job.title}`, 'info');
         loadJobs();
       } else if (data.type === 'NEW_CONTEST') {
-        showNotif(`New contest: ${data.contest.title} ($${data.contest.budget})`, 'info');
+        showNotif(`Cuộc thi mới: ${data.contest.title} ($${data.contest.budget})`, 'info');
         loadContests();
       } else if (data.type === 'CONTEST_SUBMITTED') {
-        showNotif(`Contest submitted: ${data.title}`, 'success');
+        showNotif(`Đã nộp cuộc thi: ${data.title}`, 'success');
         loadContests();
       } else if (data.type === 'NEW_GITHUB_BOUNTY') {
-        showNotif(`GitHub bounty: ${data.bounty.title}`, 'info');
+        showNotif(`Bounty mới: ${data.bounty.title}`, 'info');
         loadGithubBounties();
       } else if (data.type === 'NEW_GITCOIN_BOUNTY') {
         showNotif(`Gitcoin bounty: ${data.bounty.title}`, 'info');
@@ -756,27 +755,27 @@
         showNotif(`Algora bounty: ${data.bounty.title}`, 'info');
         loadGithubBounties();
       } else if (data.type === 'GITHUB_BOUNTY_SUBMITTED') {
-        showNotif(`Bounty submitted: ${data.title}`, 'success');
+        showNotif(`Đã nộp bounty: ${data.title}`, 'success');
         loadGithubBounties();
       } else if (data.type === 'NEW_MESSAGE') {
         newMessagesCount++;
         updateMessagesBadge();
-        showNotif(`Message from ${data.message.sender}`, 'info');
+        showNotif(`Tin nhắn từ ${data.message.sender}`, 'info');
         loadJobs();
       } else if (data.type === 'JOB_AWARDED') {
-        showNotif(`Job awarded: ${data.job.title} ($${data.job.budget})`, 'success');
+        showNotif(`Được trao việc: ${data.job.title} ($${data.job.budget})`, 'success');
         loadJobs();
       } else if (data.type === 'PROPOSAL_SENT') {
-        showNotif(`Proposal sent for $${data.amount}`, 'success');
+        showNotif(`Đã gửi đề xuất $${data.amount}`, 'success');
         loadJobs();
       } else if (data.type === 'DELIVERABLE_SUBMITTED') {
-        showNotif('Deliverable submitted', 'success');
+        showNotif('Đã nộp sản phẩm', 'success');
         loadJobs();
       } else if (data.type === 'PAYMENT_REQUESTED') {
-        showNotif(`Payment requested: $${data.amount}`, 'success');
+        showNotif(`Đã yêu cầu thanh toán: $${data.amount}`, 'success');
         loadJobs();
       } else if (data.type === 'SCAN_COMPLETE') {
-        showNotif(`Scan complete: ${data.results.new} new jobs`, 'success');
+        showNotif(`Quét xong: ${data.results.new} việc mới`, 'success');
       }
     }
 
@@ -785,7 +784,7 @@
         dot.className = `dot ${active ? 'online' : 'offline'}`;
       });
       const s = document.getElementById('monitoringStatus');
-      s.textContent = active ? 'Live' : 'Offline';
+      s.textContent = active ? 'Đang hoạt động' : 'Mất kết nối';
     }
 
     function updateMessagesBadge() {
@@ -808,14 +807,14 @@
     async function scanJobs() {
       const btn = event.target;
       btn.disabled = true;
-      btn.textContent = 'Scanning...';
+      btn.textContent = 'Đang quét...';
       try {
         const res = await fetch(`${API_BASE}/jobs/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        if (data.success) { showNotif(`Found ${data.new} jobs`, 'success'); await loadJobs(); }
+        if (data.success) { showNotif(`Tìm được ${data.new} công việc`, 'success'); await loadJobs(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
-      finally { btn.disabled = false; btn.textContent = 'Scan'; }
+      finally { btn.disabled = false; btn.textContent = 'Quét'; }
     }
 
     // LOAD JOBS
@@ -838,7 +837,7 @@
       if (jobFilter === 'applied') filtered = jobs.filter(j => j.bid_placed);
       else if (jobFilter === 'not_applied') filtered = jobs.filter(j => !j.bid_placed);
 
-      if (filtered.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>No jobs found</p></div>'; return; }
+      if (filtered.length === 0) { list.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><p>Không tìm thấy công việc</p></div>'; return; }
 
       list.innerHTML = filtered.map(j => `
         <div class="job-item ${selectedJob?.id === j.id ? 'active' : ''}" onclick="selectJob('${j.id}')">
@@ -846,7 +845,7 @@
           <div class="job-meta">
             <span class="tag tag-budget">$${j.budget}</span>
             <span class="tag tag-status">${j.status}</span>
-            ${j.bid_placed ? '<span class="tag tag-applied">Applied</span>' : ''}
+            ${j.bid_placed ? '<span class="tag tag-applied">Đã apply</span>' : ''}
           </div>
           ${j.bid_placed ? `<div class="tag-bid">Bid: $${j.bid_amount}</div>` : ''}
         </div>
@@ -881,24 +880,24 @@
 
       document.getElementById('jobDetails').innerHTML = `
         <div class="section" style="background:${typeColor};border-color:${typeBorder}">
-          <div class="section-title">${isContest ? 'Contest' : 'Direct Bid'}</div>
+          <div class="section-title">${isContest ? 'Cuộc Thi' : 'Bid Trực Tiếp'}</div>
           <div class="section-item">${jt.recommendation || 'N/A'}</div>
         </div>
         ${bidInfo}
         <div class="section">
-          <div class="section-title">Analysis</div>
-          <div class="section-item">Type: ${(a.categories || []).join(', ')}</div>
-          <div class="section-item">Complexity: ${a.complexity || 'N/A'}</div>
-          <div class="section-item">Score: ${a.score || 0}/100</div>
-          <div class="section-item">Time: ~${a.estimatedHours || 2}h</div>
-          <div class="section-item">Recommended bid: $${a.recommendedBid || selectedJob.budget}</div>
+          <div class="section-title">Phân Tích</div>
+          <div class="section-item">Loại: ${(a.categories || []).join(', ')}</div>
+          <div class="section-item">Độ phức tạp: ${a.complexity || 'N/A'}</div>
+          <div class="section-item">Điểm: ${a.score || 0}/100</div>
+          <div class="section-item">Thời gian: ~${a.estimatedHours || 2}h</div>
+          <div class="section-item">Bid đề xuất: $${a.recommendedBid || selectedJob.budget}</div>
         </div>
         <div class="section">
-          <div class="section-title">Approach</div>
+          <div class="section-title">Cách Tiếp Cận</div>
           ${(a.approach || []).map(x => `<div class="section-item">${x}</div>`).join('')}
         </div>
         <div class="section">
-          <div class="section-title">Proposal</div>
+          <div class="section-title">Đề Xuất</div>
           <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;max-height:200px;overflow-y:auto">${a.proposal || 'N/A'}</div>
         </div>
       `;
@@ -916,51 +915,51 @@
         html = `
           <div class="section" style="background:var(--success-light);border-color:var(--success);text-align:center;padding:24px">
             <div style="font-size:28px;margin-bottom:8px">&#10003;</div>
-            <div style="font-weight:600;color:#065f46;margin-bottom:4px">Applied</div>
+            <div style="font-weight:600;color:#065f46;margin-bottom:4px">Đã Apply</div>
             <div style="color:#065f46;font-size:12px">Bid: <strong>$${selectedJob.bid_amount}</strong></div>
           </div>
           <div class="section">
-            <div class="section-title">Waiting for client</div>
-            <div class="section-item">System will notify when client responds</div>
+            <div class="section-title">Chờ khách hàng</div>
+            <div class="section-item">Hệ thống sẽ thông báo khi khách hàng phản hồi</div>
           </div>`;
       } else if (status === 'ANALYZED') {
-        const btnText = isContest ? 'Join Contest' : 'Send Proposal';
+        const btnText = isContest ? 'Tham Gia Cuộc Thi' : 'Gửi Đề Xuất';
         const btnAction = isContest ? `submitContest('${selectedJob.id}')` : `approveJob('${selectedJob.id}')`;
         html = `
           <div class="section">
-            <div class="section-title">${isContest ? 'Contest Entry' : 'Ready to submit'}</div>
-            <div class="section-item">Amount: $${a.recommendedBid || selectedJob.budget}</div>
+            <div class="section-title">${isContest ? 'Tham Gia Cuộc Thi' : 'Sẵn sàng gửi'}</div>
+            <div class="section-item">Số tiền: $${a.recommendedBid || selectedJob.budget}</div>
           </div>
           <div class="button-group"><button class="btn-success" onclick="${btnAction}">${btnText}</button></div>`;
       } else if (status === 'APPROVED') {
         html = `
-          <div class="section"><div class="section-title">Proposal sent</div><div class="section-item">Waiting for client</div></div>
-          <div class="button-group"><button class="btn-success" onclick="acceptJob('${selectedJob.id}')">Send Message</button></div>`;
+          <div class="section"><div class="section-title">Đề xuất đã gửi</div><div class="section-item">Chờ khách hàng chấp nhận</div></div>
+          <div class="button-group"><button class="btn-success" onclick="acceptJob('${selectedJob.id}')">Gửi Tin Nhắn</button></div>`;
       } else if (status === 'ACCEPTED') {
         html = `
-          <div class="section"><div class="section-title">Start work</div><div class="section-item">AI will generate design</div></div>
-          <div class="button-group"><button class="btn-success" onclick="startWork('${selectedJob.id}')">Start & Generate</button></div>`;
+          <div class="section"><div class="section-title">Bắt Đầu Làm Việc</div><div class="section-item">AI sẽ tự động tạo design</div></div>
+          <div class="button-group"><button class="btn-success" onclick="startWork('${selectedJob.id}')">Bắt Đầu & Tạo Design</button></div>`;
       } else if (status === 'IN_PROGRESS') {
         html = `
-          <div class="section"><div class="section-title">Submit deliverable</div><div class="section-item">Design ready</div></div>
-          <div class="button-group"><button class="btn-success" onclick="submitJob('${selectedJob.id}')">Submit</button></div>`;
+          <div class="section"><div class="section-title">Nộp Sản Phẩm</div><div class="section-item">Design sẵn sàng</div></div>
+          <div class="button-group"><button class="btn-success" onclick="submitJob('${selectedJob.id}')">Nộp Sản Phẩm</button></div>`;
       } else if (status === 'SUBMITTED') {
         html = `
-          <div class="section"><div class="section-title">Request payment</div><div class="section-item">Deliverable submitted</div></div>
-          <div class="button-group"><button class="btn-success" onclick="requestPayment('${selectedJob.id}')">Request Payment</button></div>`;
+          <div class="section"><div class="section-title">Yêu Cầu Thanh Toán</div><div class="section-item">Sản phẩm đã nộp</div></div>
+          <div class="button-group"><button class="btn-success" onclick="requestPayment('${selectedJob.id}')">Yêu Cầu Thanh Toán</button></div>`;
       } else if (status === 'PAYMENT_REQUESTED') {
         html = `
           <div class="section">
-            <div class="section-title">Confirm payment</div>
+            <div class="section-title">Xác Nhận Thanh Toán</div>
             <input type="number" id="amount_${selectedJob.id}" placeholder="$50" value="${selectedJob.budget * 0.8}" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px">
           </div>
-          <div class="button-group"><button class="btn-success" onclick="confirmPayment('${selectedJob.id}')">Confirm Payment</button></div>`;
+          <div class="button-group"><button class="btn-success" onclick="confirmPayment('${selectedJob.id}')">Xác Nhận Đã Thanh Toán</button></div>`;
       } else if (status === 'COMPLETED') {
         html = `
           <div class="section" style="background:var(--success-light);border-color:var(--success);text-align:center;padding:24px">
             <div style="font-size:28px;margin-bottom:8px">&#127881;</div>
-            <div style="font-weight:600;color:#065f46">Complete!</div>
-            <div style="color:#065f46">Earned: <strong>$${selectedJob.earnings}</strong></div>
+            <div style="font-weight:600;color:#065f46">Hoàn Thành!</div>
+            <div style="color:#065f46">Thu nhập: <strong>$${selectedJob.earnings}</strong></div>
           </div>`;
       }
 
@@ -969,93 +968,93 @@
 
     // API ACTIONS
     async function approveJob(jobId) {
-      if (!confirm(`Send proposal for $${selectedJob.analysis?.recommendedBid || selectedJob.budget}?`)) return;
+      if (!confirm(`Gửi đề xuất với giá $${selectedJob.analysis?.recommendedBid || selectedJob.budget}?`)) return;
       try {
         const res = await fetch(`${API_BASE}/actions/send-proposal`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobId, projectId: selectedJob.external_id, amount: selectedJob.analysis?.recommendedBid || selectedJob.budget, period: 7, proposal: selectedJob.analysis?.proposal || 'Professional design' }),
         });
         const data = await res.json();
-        if (data.success) { showNotif('Proposal sent!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
-        else if (data.error === 'Already bid on this project' || res.status === 409) { showNotif('Already applied', 'warning'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        if (data.success) { showNotif('Đề xuất đã gửi!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        else if (data.error === 'Already bid on this project' || res.status === 409) { showNotif('Đã apply rồi', 'warning'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
         else { showNotif(data.error || data.message, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
     async function acceptJob(jobId) {
-      if (!confirm('Send acceptance message?')) return;
+      if (!confirm('Gửi tin nhắn chấp nhận?')) return;
       try {
         const res = await fetch(`${API_BASE}/actions/send-message`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobId, threadId: selectedJob.external_id, message: "Thank you for choosing me! I'm excited to work on your project. I'll start right away!" }),
         });
         const data = await res.json();
-        if (data.success) { showNotif('Message sent!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        if (data.success) { showNotif('Tin nhắn đã gửi!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
     async function startWork(jobId) {
-      if (!confirm('Generate design?')) return;
+      if (!confirm('Tạo design tự động?')) return;
       try {
         const res = await fetch(`${API_BASE}/jobs/${jobId}/start-work`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
         const data = await res.json();
-        if (data.success) { showNotif('Design generated!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        if (data.success) { showNotif('Design đã tạo!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
     async function submitJob(jobId) {
-      if (!confirm('Submit deliverable?')) return;
+      if (!confirm('Nộp sản phẩm?')) return;
       try {
         const res = await fetch(`${API_BASE}/actions/submit-deliverable`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobId, projectId: selectedJob.external_id, bidId: selectedJob.external_id, deliverableUrl: 'https://example.com/design.zip' }),
         });
         const data = await res.json();
-        if (data.success) { showNotif('Submitted!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        if (data.success) { showNotif('Đã nộp!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
     async function requestPayment(jobId) {
       const amount = selectedJob.budget * 0.8;
-      if (!confirm(`Request $${amount}?`)) return;
+      if (!confirm(`Yêu cầu thanh toán $${amount}?`)) return;
       try {
         const res = await fetch(`${API_BASE}/actions/request-payment`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobId, projectId: selectedJob.external_id, bidId: selectedJob.external_id, amount }),
         });
         const data = await res.json();
-        if (data.success) { showNotif('Payment request sent!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
+        if (data.success) { showNotif('Đã yêu cầu thanh toán!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showActions(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
     async function confirmPayment(jobId) {
       const amount = document.getElementById(`amount_${jobId}`)?.value || selectedJob.budget * 0.8;
-      if (!confirm(`Confirm $${amount}?`)) return;
+      if (!confirm(`Xác nhận đã nhận $${amount}?`)) return;
       try {
         const res = await fetch(`${API_BASE}/jobs/${jobId}/confirm-payment`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ amount: parseFloat(amount) }),
         });
         const data = await res.json();
-        if (data.success) { showNotif(`Earned $${amount}!`, 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        if (data.success) { showNotif(`Thu nhập $${amount}!`, 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // CONTEST FUNCTIONS
+    // HÀM CUỘC THI
     async function submitContest(jobId) {
-      if (!confirm('Join this contest?')) return;
+      if (!confirm('Tham gia cuộc thi này?')) return;
       try {
         const res = await fetch(`${API_BASE}/actions/submit-contest`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jobId, projectId: selectedJob.external_id, contestId: selectedJob.external_id, entryUrl: 'https://example.com/entry', description: selectedJob.analysis?.proposal || 'Design entry' }),
         });
         const data = await res.json();
-        if (data.success) { showNotif('Entry submitted!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
+        if (data.success) { showNotif('Đã nộp bài!', 'success'); await loadJobs(); selectedJob = jobs.find(j => j.id === jobId); showJobDetails(); showActions(); }
         else { showNotif(data.error || data.message, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
@@ -1065,7 +1064,7 @@
         const res = await fetch(`${API_BASE}/contests`);
         const data = await res.json();
         if (data.success) { renderContests(data.contests || []); }
-      } catch (e) { /* silent */ }
+      } catch (e) { /* im lặng */ }
     }
 
     function renderContests(contests) {
@@ -1074,9 +1073,9 @@
       const badge = document.getElementById('contestBadge');
       const btn = document.getElementById('btnSubmitAll');
 
-      statusEl.innerHTML = `<span style="color:var(--success)">&#10003;</span> ${contests.length} found`;
+      statusEl.innerHTML = `<span style="color:var(--success)">&#10003;</span> ${contests.length} tìm thấy`;
 
-      if (contests.length === 0) { el.innerHTML = '<div class="card-empty">No contests found</div>'; badge.style.display = 'none'; btn.disabled = true; return; }
+      if (contests.length === 0) { el.innerHTML = '<div class="card-empty">Không tìm thấy cuộc thi</div>'; badge.style.display = 'none'; btn.disabled = true; return; }
 
       badge.textContent = contests.length;
       badge.style.display = '';
@@ -1087,34 +1086,34 @@
         const submitted = c.status === 'SUBMITTED' || c.status === 'CONTEST_SUBMITTED';
         return `
           <div class="card ${submitted ? 'submitted' : ''}">
-            <div class="card-platform"><span class="platform-dot contest"></span> Freelancer Contest</div>
-            ${submitted ? '<span class="card-status-badge submitted">Submitted</span>' : '<span class="card-status-badge new">New</span>'}
+            <div class="card-platform"><span class="platform-dot contest"></span> Cuộc Thi Freelancer</div>
+            ${submitted ? '<span class="card-status-badge submitted">Đã Nộp</span>' : '<span class="card-status-badge new">Mới</span>'}
             <div class="card-title">${c.title}</div>
-            <div class="card-meta"><span>Score: ${c.analysis?.score || 0}/100</span></div>
+            <div class="card-meta"><span>Điểm: ${c.analysis?.score || 0}/100</span></div>
             <div class="card-amount ${c.budget > 0 ? '' : 'zero'}">$${c.budget || 0}</div>
             <button class="btn-card ${submitted ? 'submitted-btn' : 'contest-btn'}" onclick="${submitted ? '' : `autoSubmitContest('${c.id}')`}" ${submitted ? 'disabled' : ''}>
-              ${submitted ? 'Submitted' : 'Submit Entry'}
+              ${submitted ? 'Đã Nộp' : 'Nộp Bài'}
             </button>
           </div>`;
       }).join('');
     }
 
     async function autoSubmitContest(contestId) {
-      if (!confirm('Submit contest entry?')) return;
+      if (!confirm('Nộp bài cuộc thi?')) return;
       try {
         const res = await fetch(`${API_BASE}/contests/${contestId}/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) { showNotif('Contest submitted!', 'success'); loadContests(); }
+        if (data.success) { showNotif('Đã nộp cuộc thi!', 'success'); loadContests(); }
         else { showNotif(data.error || data.message, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
     async function submitAllContests() {
-      if (!confirm('Submit all contests?')) return;
+      if (!confirm('Nộp tất cả cuộc thi?')) return;
       try {
         const res = await fetch(`${API_BASE}/contests/batch/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) { showNotif(`Submitted: ${data.submitted}/${data.total}`, 'success'); loadContests(); }
+        if (data.success) { showNotif(`Đã nộp: ${data.submitted}/${data.total}`, 'success'); loadContests(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
@@ -1125,7 +1124,7 @@
         const res = await fetch(`${API_BASE}/github`);
         const data = await res.json();
         if (data.success) { renderGithubBounties(data.bounties || []); }
-      } catch (e) { /* silent */ }
+      } catch (e) { /* im lặng */ }
     }
 
     function renderGithubBounties(bounties) {
@@ -1134,10 +1133,10 @@
       const badge = document.getElementById('githubBadge');
       const btn = document.getElementById('btnSubmitAllBounties');
 
-      statusEl.innerHTML = `<span style="color:var(--success)">&#10003;</span> ${bounties.length} found`;
+      statusEl.innerHTML = `<span style="color:var(--success)">&#10003;</span> ${bounties.length} tìm thấy`;
       document.getElementById('totalBountiesStat').textContent = `${bounties.length} bounties`;
 
-      if (bounties.length === 0) { el.innerHTML = '<div class="card-empty">No bounties found yet</div>'; badge.style.display = 'none'; btn.disabled = true; return; }
+      if (bounties.length === 0) { el.innerHTML = '<div class="card-empty">Chưa tìm thấy bounty nào</div>'; badge.style.display = 'none'; btn.disabled = true; return; }
 
       badge.textContent = bounties.length;
       badge.style.display = '';
@@ -1154,44 +1153,44 @@
         return `
           <div class="card ${submitted ? 'submitted' : ''}">
             <div class="card-platform"><span class="platform-dot ${platform}"></span> ${platformLabels[platform] || 'GitHub'}</div>
-            ${submitted ? '<span class="card-status-badge submitted">Submitted</span>' : '<span class="card-status-badge new">New</span>'}
+            ${submitted ? '<span class="card-status-badge submitted">Đã Nộp</span>' : '<span class="card-status-badge new">Mới</span>'}
             <div class="card-title">${b.title}</div>
             <div class="card-meta">
               ${b.github_repo ? `<span>${b.github_repo}</span>` : ''}
             </div>
-            <div class="card-amount ${b.budget > 0 ? '' : 'zero'}">${b.budget > 0 ? '$' + b.budget : 'TBD'}</div>
+            <div class="card-amount ${b.budget > 0 ? '' : 'zero'}">${b.budget > 0 ? '$' + b.budget : 'Chưa xác định'}</div>
             <div class="card-score">
               <div class="score-bar"><div class="score-fill ${scoreClass}" style="width:${score}%"></div></div>
               <span class="score-label">${score}/100</span>
             </div>
             <button class="btn-card ${submitted ? 'submitted-btn' : 'github-btn'}" onclick="${submitted ? '' : `submitBounty('${b.id}')`}" ${submitted ? 'disabled' : ''}>
-              ${submitted ? 'Submitted' : 'Submit'}
+              ${submitted ? 'Đã Nộp' : 'Nộp'}
             </button>
           </div>`;
       }).join('');
     }
 
     async function submitBounty(bountyId) {
-      if (!confirm('Submit this bounty?')) return;
+      if (!confirm('Nộp bounty này?')) return;
       try {
         const res = await fetch(`${API_BASE}/github/${bountyId}/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) { showNotif('Bounty submitted!', 'success'); loadGithubBounties(); }
+        if (data.success) { showNotif('Đã nộp bounty!', 'success'); loadGithubBounties(); }
         else { showNotif(data.error || data.message, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
     async function submitAllBounties() {
-      if (!confirm('Submit all bounties?')) return;
+      if (!confirm('Nộp tất cả bounties?')) return;
       try {
         const res = await fetch(`${API_BASE}/github/batch/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
         const data = await res.json();
-        if (data.success) { showNotif(`Submitted: ${data.submitted}/${data.total}`, 'success'); loadGithubBounties(); }
+        if (data.success) { showNotif(`Đã nộp: ${data.submitted}/${data.total}`, 'success'); loadGithubBounties(); }
         else { showNotif(data.error, 'error'); }
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
-    // INIT
+    // KHỞI TẠO
     window.addEventListener('load', () => {
       connectWebSocket();
       loadJobs();
