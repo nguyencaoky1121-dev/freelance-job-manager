@@ -65,10 +65,10 @@ router.post('/:id/auto-submit', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Bounty not found' });
     }
 
-    if (bounty.platform !== 'github') {
+    if (!['github', 'gitcoin', 'algora'].includes(bounty.platform)) {
       return res.status(400).json({
         success: false,
-        error: 'Only GitHub bounties support auto-submit',
+        error: 'Chỉ hỗ trợ auto-submit cho GitHub, Gitcoin và Algora bounties',
       });
     }
 
@@ -203,7 +203,7 @@ router.post('/batch/auto-submit', async (req, res) => {
           [bountyId]
         );
 
-        if (!bounty || bounty.platform !== 'github' || bounty.status === 'SUBMITTED') {
+        if (!bounty || !['github', 'gitcoin', 'algora'].includes(bounty.platform) || bounty.status === 'SUBMITTED') {
           results.push({
             bountyId,
             success: false,
