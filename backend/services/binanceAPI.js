@@ -67,6 +67,25 @@ class BinanceAPI {
 
       return { success: true, balances: [] };
     } catch (error) {
+      // Handle geo-restriction (451) and other API errors gracefully
+      if (error.response?.status === 451) {
+        console.warn('⚠️ Binance API: Geographic restriction (451) - IP may be blocked');
+        return {
+          success: false,
+          error: 'Binance API: Geographic restriction - service not available in your region',
+          status: 451,
+        };
+      }
+
+      if (error.response?.status === 403) {
+        console.warn('⚠️ Binance API: Access forbidden (403) - check API key permissions');
+        return {
+          success: false,
+          error: 'Binance API: Access forbidden - check API key and permissions',
+          status: 403,
+        };
+      }
+
       console.error('❌ Error getting Binance balance:', error.message);
       return {
         success: false,
@@ -113,6 +132,25 @@ class BinanceAPI {
 
       return { success: false, error: 'No address found' };
     } catch (error) {
+      // Handle geo-restriction (451) and other API errors gracefully
+      if (error.response?.status === 451) {
+        console.warn('⚠️ Binance API: Geographic restriction (451) - IP may be blocked');
+        return {
+          success: false,
+          error: 'Binance API: Geographic restriction - service not available in your region',
+          status: 451,
+        };
+      }
+
+      if (error.response?.status === 403) {
+        console.warn('⚠️ Binance API: Access forbidden (403) - check API key permissions');
+        return {
+          success: false,
+          error: 'Binance API: Access forbidden - check API key and permissions',
+          status: 403,
+        };
+      }
+
       console.error(`❌ Error getting ${coin} deposit address:`, error.message);
       return {
         success: false,
@@ -172,6 +210,16 @@ class BinanceAPI {
 
       return { success: true, deposits: [] };
     } catch (error) {
+      if (error.response?.status === 451) {
+        console.warn(`⚠️ Binance API: Geographic restriction (451) for ${coin} deposit history`);
+        return {
+          success: false,
+          error: 'Binance API: Geographic restriction - service not available in your region',
+          status: 451,
+          deposits: [],
+        };
+      }
+
       console.error(`❌ Error getting ${coin} deposit history:`, error.message);
       return {
         success: false,
