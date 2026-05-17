@@ -362,6 +362,108 @@ class GitHubAPI {
       };
     }
   }
+
+  /**
+   * Create a pull request
+   */
+  async createPullRequest(owner, repo, head, base, title, body) {
+    try {
+      if (!this.token) {
+        return {
+          success: false,
+          error: 'GitHub token required to create PR',
+        };
+      }
+
+      const response = await axios.post(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/pulls`,
+        {
+          title,
+          body,
+          head,
+          base,
+        },
+        {
+          headers: {
+            'Authorization': `token ${this.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+          timeout: 10000,
+        }
+      );
+
+      return {
+        success: true,
+        pr: response.data,
+      };
+    } catch (error) {
+      console.error(`❌ Error creating PR on ${owner}/${repo}:`, error.message);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get PR details
+   */
+  async getPRDetails(owner, repo, prNumber) {
+    try {
+      const headers = this.token ? {
+        'Authorization': `token ${this.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      } : {
+        'Accept': 'application/vnd.github.v3+json',
+      };
+
+      const response = await axios.get(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/pulls/${prNumber}`,
+        { headers, timeout: 10000 }
+      );
+
+      return {
+        success: true,
+        pr: response.data,
+      };
+    } catch (error) {
+      console.error(`❌ Error getting PR ${owner}/${repo}#${prNumber}:`, error.message);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Get PR reviews
+   */
+  async getPRReviews(owner, repo, prNumber) {
+    try {
+      const headers = this.token ? {
+        'Authorization': `token ${this.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      } : {
+        'Accept': 'application/vnd.github.v3+json',
+      };
+
+      const response = await axios.get(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/pulls/${prNumber}/reviews`,
+        { headers, timeout: 10000 }
+      );
+
+      return {
+        success: true,
+        reviews: response.data,
+      };
+    } catch (error) {
+      console.error(`❌ Error getting PR reviews ${owner}/${repo}#${prNumber}:`, error.message);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = { GitHubAPI };
