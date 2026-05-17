@@ -1,6 +1,7 @@
 const { getThreads, getMessages, getProjectDetails, searchContests } = require('./freelancerAPI');
 const { generateAutoReply, analyzeJob } = require('./jobAnalyzer');
 const { GitHubScanner } = require('./githubScanner');
+const { GitHubSubmissionTracker } = require('./githubSubmissionTracker');
 const { run, all, get } = require('../db/database');
 
 class JobMonitor {
@@ -9,6 +10,7 @@ class JobMonitor {
     this.lastCheckTime = null;
     this.checkCount = 0;
     this.githubScanner = new GitHubScanner();
+    this.githubTracker = new GitHubSubmissionTracker();
   }
 
   /**
@@ -361,9 +363,12 @@ class JobMonitor {
       // Auto-scan GitHub bounties
       const { newBounties } = await this.autoScanGitHub();
 
+      // Track GitHub submissions (check for replies, status changes)
+      const { tracked, updated: submissionsUpdated } = await this.githubTracker.trackSubmissions();
+
       this.lastCheckTime = new Date();
 
-      console.log(`✅ Monitoring cycle complete: ${newMessages} messages, ${newAwards} awards, ${newContests} contests, ${newBounties} bounties\n`);
+      console.log(`✅ Monitoring cycle complete: ${newMessages} messages, ${newAwards} awards, ${newContests} contests, ${newBounties} bounties, ${submissionsUpdated} submission updates\n`);
 
       // Broadcast monitoring status
       if (global.broadcast) {
@@ -374,6 +379,8 @@ class JobMonitor {
           newAwards,
           newContests,
           newBounties,
+          submissionsTracked: tracked,
+          submissionsUpdated,
           checkCount: this.checkCount,
         });
       }

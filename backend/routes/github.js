@@ -277,4 +277,41 @@ I'd love to discuss the requirements and timeline. Looking forward to hearing fr
   }
 });
 
+/**
+ * GET /api/github/submissions - Get all submitted bounties with tracking status
+ */
+router.get('/submissions/all', async (req, res) => {
+  try {
+    const submissions = await all(
+      `SELECT j.*, p.payment_status, p.bounty_amount as tracked_amount
+       FROM jobs j
+       LEFT JOIN payment_history p ON j.id = p.job_id
+       WHERE j.platform IN ('github', 'gitcoin', 'algora')
+       AND j.bid_placed = 1
+       ORDER BY j.submitted_at DESC`
+    );
+
+    const summary = await get(
+      `SELECT
+        COUNT(*) as total_submitted,
+        SUM(CASE WHEN status = 'COMPLETED' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN status = 'IN_PROGRESS' THEN 1 ELSE 0 END) as in_progress,
+        SUM(CASE WHEN status = 'SUBMITTED' THEN 1 ELSE 0 END) as pending,
+        SUM(budget) as total_potential_earnings
+       FROM jobs
+       WHERE platform IN ('github', 'gitcoin', 'algora')
+       AND bid_placed = 1`
+    );
+
+    res.json({
+      success: true,
+      submissions: submissions || [],
+      summary: summary || {},
+      total: submissions?.length || 0,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 module.exports = router;

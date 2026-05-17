@@ -895,6 +895,22 @@
       </div>
     </div>
 
+    <!-- SUBMITTED BOUNTIES TRACKING -->
+    <div class="bottom-panel" style="grid-column: 1 / -1;">
+      <div class="bottom-panel-header">
+        <div class="title-group">
+          <h3>📊 Theo Dõi Bounty Đã Nộp</h3>
+          <span class="count-badge" id="submittedBadge" style="display:none;">0</span>
+        </div>
+        <div class="actions">
+          <button class="btn-ghost btn-sm" onclick="loadSubmittedBounties()">Làm mới</button>
+        </div>
+      </div>
+      <div class="panel-table-wrap" id="submittedBountiesList">
+        <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1539,6 +1555,91 @@
       el.innerHTML = html;
     }
 
+    // SUBMITTED BOUNTIES TRACKING
+    async function loadSubmittedBounties() {
+      try {
+        const res = await fetch(`${API_BASE}/github/submissions/all`);
+        const data = await res.json();
+        if (data.success) { renderSubmittedBounties(data.submissions || [], data.summary || {}); }
+      } catch (e) { /* im lặng */ }
+    }
+
+    function renderSubmittedBounties(submissions, summary) {
+      const el = document.getElementById('submittedBountiesList');
+      const badge = document.getElementById('submittedBadge');
+
+      if (submissions.length === 0) {
+        el.innerHTML = '<div class="card-empty">Chưa nộp bounty nào</div>';
+        badge.style.display = 'none';
+        return;
+      }
+
+      badge.textContent = submissions.length;
+      badge.style.display = '';
+
+      const html = `
+        <div style="padding: 20px;">
+          <!-- Summary Stats -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div style="background: var(--info-light); border: 1px solid var(--info); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: var(--info);">${summary.total_submitted || 0}</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Tổng Nộp</div>
+            </div>
+            <div style="background: var(--success-light); border: 1px solid var(--success); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: var(--success);">${summary.completed || 0}</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Hoàn Thành</div>
+            </div>
+            <div style="background: var(--warning-light); border: 1px solid var(--warning); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: var(--warning);">${summary.in_progress || 0}</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Đang Xử Lý</div>
+            </div>
+            <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; text-align: center;">
+              <div style="font-size: 24px; font-weight: 600; color: var(--text);">$${(summary.total_potential_earnings || 0).toLocaleString()}</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Tiềm Năng</div>
+            </div>
+          </div>
+
+          <!-- Submissions Table -->
+          <table class="bounty-table">
+            <thead>
+              <tr>
+                <th>Tiêu Đề</th>
+                <th>Nền Tảng</th>
+                <th>Tiền</th>
+                <th>Trạng Thái</th>
+                <th>Thanh Toán</th>
+                <th>Ngày Nộp</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${submissions.map(s => {
+                const submittedDate = new Date(s.submitted_at).toLocaleDateString('vi-VN');
+                const statusColor = s.status === 'COMPLETED' ? 'paid' : s.status === 'IN_PROGRESS' ? 'submitted' : 'pending';
+                const statusText = s.status === 'COMPLETED' ? 'Hoàn thành' : s.status === 'IN_PROGRESS' ? 'Đang xử lý' : 'Chờ phản hồi';
+                const paymentColor = s.payment_status === 'paid' ? 'paid' : s.payment_status === 'in_progress' ? 'submitted' : 'pending';
+                const paymentText = s.payment_status === 'paid' ? 'Đã thanh toán' : s.payment_status === 'in_progress' ? 'Đang xử lý' : 'Chờ xử lý';
+                const platform = s.platform || 'github';
+                return `
+                  <tr>
+                    <td class="title-cell" title="${s.title}">${s.title}</td>
+                    <td>
+                      <span class="status-dot" style="background: ${platform === 'algora' ? '#8b5cf6' : platform === 'gitcoin' ? '#3b82f6' : '#24292e'}"></span>
+                      ${platform.toUpperCase()}
+                    </td>
+                    <td class="amount-cell"><strong>$${s.budget || 0}</strong></td>
+                    <td><span class="status-dot ${statusColor}"></span> ${statusText}</td>
+                    <td><span class="status-dot ${paymentColor}"></span> ${paymentText}</td>
+                    <td>${submittedDate}</td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+      el.innerHTML = html;
+    }
+
     // CRYPTO WALLET - Ví Binance
     async function loadCryptoSummary() {
       try {
@@ -1631,11 +1732,13 @@
       loadSubmissionHistory();
       loadPaymentHistory();
       loadCryptoSummary();
+      loadSubmittedBounties();
       setInterval(loadContests, 30000);
       setInterval(loadGithubBounties, 30000);
       setInterval(loadQualifiedBounties, 60000);
       setInterval(loadPaymentHistory, 60000);
       setInterval(loadCryptoSummary, 60000);
+      setInterval(loadSubmittedBounties, 60000);
     });
   </script>
 </body>
