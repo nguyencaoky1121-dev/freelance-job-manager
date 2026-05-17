@@ -162,10 +162,11 @@ class GitHubAPI {
 
   /**
    * Search Gitcoin bounties via GitHub (Gitcoin uses GitHub issues)
+   * Searches multiple queries to find more bounties
    */
   async searchGitcoinBounties(options = {}) {
     const {
-      limit = 20,
+      limit = 30,
     } = options;
 
     try {
@@ -176,48 +177,63 @@ class GitHubAPI {
         'Accept': 'application/vnd.github.v3+json',
       };
 
-      // Search GitHub for Gitcoin-related bounty issues
-      const query = 'label:gitcoin-bounty is:open is:issue';
+      // Multiple search queries to find Gitcoin bounties
+      const queries = [
+        'label:gitcoin-bounty is:open is:issue sort:updated-desc',
+        'label:gitcoin is:open is:issue bounty sort:updated-desc',
+        'label:bounty label:gitcoin is:open is:issue sort:updated-desc',
+        'label:reward label:gitcoin is:open is:issue sort:updated-desc',
+      ];
 
-      const response = await axios.get(`${GITHUB_API_BASE}/search/issues`, {
-        params: {
-          q: query,
-          per_page: limit,
-          page: 1,
-        },
-        headers,
-        timeout: 10000,
-      });
+      const allBounties = [];
+      const seenIds = new Set();
 
-      if (response.data && response.data.items) {
-        const bounties = response.data.items.map(issue => {
-          const bountyMatch = (issue.title + ' ' + (issue.body || '')).match(/\$(\d+)/);
-          const bountyAmount = bountyMatch ? parseInt(bountyMatch[1]) : 0;
+      for (const query of queries) {
+        try {
+          const response = await axios.get(`${GITHUB_API_BASE}/search/issues`, {
+            params: {
+              q: query,
+              per_page: limit,
+              page: 1,
+            },
+            headers,
+            timeout: 10000,
+          });
 
-          return {
-            id: issue.id,
-            number: issue.number,
-            title: issue.title,
-            description: issue.body || '',
-            url: issue.html_url,
-            repo: issue.repository_url.split('/').slice(-2).join('/'),
-            owner: issue.repository_url.split('/')[4],
-            repoName: issue.repository_url.split('/')[5],
-            bountyAmount,
-            platform: 'gitcoin',
-            createdAt: issue.created_at,
-            updatedAt: issue.updated_at,
-          };
-        });
+          if (response.data && response.data.items) {
+            for (const issue of response.data.items) {
+              if (seenIds.has(issue.id)) continue;
+              seenIds.add(issue.id);
 
-        return {
-          success: true,
-          bounties,
-          total: response.data.total_count,
-        };
+              const bountyMatch = (issue.title + ' ' + (issue.body || '')).match(/\$(\d+)/);
+              const bountyAmount = bountyMatch ? parseInt(bountyMatch[1]) : 0;
+
+              allBounties.push({
+                id: issue.id,
+                number: issue.number,
+                title: issue.title,
+                description: issue.body || '',
+                url: issue.html_url,
+                repo: issue.repository_url.split('/').slice(-2).join('/'),
+                owner: issue.repository_url.split('/')[4],
+                repoName: issue.repository_url.split('/')[5],
+                bountyAmount,
+                platform: 'gitcoin',
+                createdAt: issue.created_at,
+                updatedAt: issue.updated_at,
+              });
+            }
+          }
+        } catch (err) {
+          console.log(`⚠️ Query failed: ${query.substring(0, 30)}...`);
+        }
       }
 
-      return { success: true, bounties: [], total: 0 };
+      return {
+        success: true,
+        bounties: allBounties,
+        total: allBounties.length,
+      };
     } catch (error) {
       console.error('❌ Error searching Gitcoin bounties:', error.message);
       return {
@@ -231,10 +247,11 @@ class GitHubAPI {
 
   /**
    * Search Algora bounties via GitHub (Algora uses GitHub issues)
+   * Searches multiple queries to find more bounties
    */
   async searchAlgoraBounties(options = {}) {
     const {
-      limit = 20,
+      limit = 30,
     } = options;
 
     try {
@@ -245,48 +262,63 @@ class GitHubAPI {
         'Accept': 'application/vnd.github.v3+json',
       };
 
-      // Search GitHub for Algora-related bounty issues
-      const query = 'label:algora-bounty is:open is:issue';
+      // Multiple search queries to find Algora bounties
+      const queries = [
+        'label:algora-bounty is:open is:issue sort:updated-desc',
+        'repo:algora-io/algora is:open is:issue bounty sort:updated-desc',
+        'label:bounty repo:algora-io is:open is:issue sort:updated-desc',
+        'label:reward repo:algora-io is:open is:issue sort:updated-desc',
+      ];
 
-      const response = await axios.get(`${GITHUB_API_BASE}/search/issues`, {
-        params: {
-          q: query,
-          per_page: limit,
-          page: 1,
-        },
-        headers,
-        timeout: 10000,
-      });
+      const allBounties = [];
+      const seenIds = new Set();
 
-      if (response.data && response.data.items) {
-        const bounties = response.data.items.map(issue => {
-          const bountyMatch = (issue.title + ' ' + (issue.body || '')).match(/\$(\d+)/);
-          const bountyAmount = bountyMatch ? parseInt(bountyMatch[1]) : 0;
+      for (const query of queries) {
+        try {
+          const response = await axios.get(`${GITHUB_API_BASE}/search/issues`, {
+            params: {
+              q: query,
+              per_page: limit,
+              page: 1,
+            },
+            headers,
+            timeout: 10000,
+          });
 
-          return {
-            id: issue.id,
-            number: issue.number,
-            title: issue.title,
-            description: issue.body || '',
-            url: issue.html_url,
-            repo: issue.repository_url.split('/').slice(-2).join('/'),
-            owner: issue.repository_url.split('/')[4],
-            repoName: issue.repository_url.split('/')[5],
-            bountyAmount,
-            platform: 'algora',
-            createdAt: issue.created_at,
-            updatedAt: issue.updated_at,
-          };
-        });
+          if (response.data && response.data.items) {
+            for (const issue of response.data.items) {
+              if (seenIds.has(issue.id)) continue;
+              seenIds.add(issue.id);
 
-        return {
-          success: true,
-          bounties,
-          total: response.data.total_count,
-        };
+              const bountyMatch = (issue.title + ' ' + (issue.body || '')).match(/\$(\d+)/);
+              const bountyAmount = bountyMatch ? parseInt(bountyMatch[1]) : 0;
+
+              allBounties.push({
+                id: issue.id,
+                number: issue.number,
+                title: issue.title,
+                description: issue.body || '',
+                url: issue.html_url,
+                repo: issue.repository_url.split('/').slice(-2).join('/'),
+                owner: issue.repository_url.split('/')[4],
+                repoName: issue.repository_url.split('/')[5],
+                bountyAmount,
+                platform: 'algora',
+                createdAt: issue.created_at,
+                updatedAt: issue.updated_at,
+              });
+            }
+          }
+        } catch (err) {
+          console.log(`⚠️ Query failed: ${query.substring(0, 30)}...`);
+        }
       }
 
-      return { success: true, bounties: [], total: 0 };
+      return {
+        success: true,
+        bounties: allBounties,
+        total: allBounties.length,
+      };
     } catch (error) {
       console.error('❌ Error searching Algora bounties:', error.message);
       return {
