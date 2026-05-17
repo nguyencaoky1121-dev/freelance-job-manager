@@ -14,6 +14,7 @@ const githubRoutes = require('./routes/github');
 const paymentsRoutes = require('./routes/payments');
 const cryptoRoutes = require('./routes/crypto');
 const { router: monitorRoutes, monitor } = require('./routes/monitor');
+const autoworkRoutes = require('./routes/autowork');
 const { JobScanner } = require('./services/jobScanner');
 const { JobMonitor } = require('./services/jobMonitor');
 
@@ -37,6 +38,7 @@ app.use('/api/github', githubRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/crypto', cryptoRoutes);
 app.use('/api/monitor', monitorRoutes);
+app.use('/api/autowork', autoworkRoutes);
 
 // Serve frontend (for all routes not matched)
 app.use((req, res) => {
