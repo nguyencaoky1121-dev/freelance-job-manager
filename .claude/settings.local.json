@@ -56,7 +56,16 @@
       "Bash(node -c backend/routes/monitor.js)",
       "Bash(node -c backend/server.js)",
       "Bash(timeout 5)",
-      "Bash(ping -n 6 127.0.0.1)"
+      "Bash(ping -n 6 127.0.0.1)",
+      "Bash(node -e \"require\\('dotenv'\\).config\\(\\); console.log\\('GITHUB_TOKEN:', process.env.GITHUB_TOKEN ? '✅ Configured \\(' + process.env.GITHUB_TOKEN.substring\\(0,4\\) + '...' + process.env.GITHUB_TOKEN.slice\\(-4\\) + '\\)' : '❌ Missing'\\); console.log\\('GITHUB_USERNAME:', process.env.GITHUB_USERNAME || '❌ Missing'\\);\")",
+      "Bash(findstr :3002)",
+      "Bash(findstr LISTENING)",
+      "Bash(taskkill /PID 14036 /F)",
+      "Bash(timeout 2)",
+      "Bash(node -e \"require\\('dotenv'\\).config\\(\\); console.log\\('GITHUB_TOKEN:', process.env.GITHUB_TOKEN ? '✅ Configured' : '❌ Missing'\\); console.log\\('GITHUB_USERNAME:', process.env.GITHUB_USERNAME || '❌ Missing'\\);\")",
+      "Bash(curl -s https://freelance-job-manager-production-5010.up.railway.app/api/github)",
+      "Bash(curl -s -X POST https://freelance-job-manager-production-5010.up.railway.app/api/github/algora_4462208643_1778996269750/auto-submit -H \"Content-Type: application/json\" -d \"{}\")",
+      "Bash(python -m json.tool)"
     ]
   }
 }

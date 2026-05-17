@@ -125,6 +125,130 @@
       min-height: 500px;
     }
 
+    /* ─── INDEPENDENT COLUMNS ─── */
+    .dashboard-grid > .panel {
+      overflow-y: auto;
+      max-height: 600px;
+    }
+
+    /* ─── BOTTOM 3-COLUMN GRID ─── */
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+
+    .bottom-grid > .bottom-panel {
+      display: flex;
+      flex-direction: column;
+      max-height: 450px;
+    }
+
+    .bottom-grid > .bottom-panel > .card-scroll,
+    .bottom-grid > .bottom-panel > .panel-table-wrap {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    .bottom-grid > .bottom-panel > .card-scroll {
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ─── BOUNTY TABLE ─── */
+    .panel-table-wrap {
+      padding: 0;
+      overflow-y: auto;
+    }
+
+    .panel-table-wrap::-webkit-scrollbar { width: 4px; }
+    .panel-table-wrap::-webkit-scrollbar-track { background: transparent; }
+    .panel-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .bounty-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+
+    .bounty-table th {
+      position: sticky;
+      top: 0;
+      background: var(--surface-alt);
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bounty-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .bounty-table tr:hover { background: var(--info-light); }
+    .bounty-table tr:last-child td { border-bottom: none; }
+
+    .bounty-table .title-cell {
+      font-weight: 500;
+      color: var(--text);
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .bounty-table .amount-cell {
+      font-weight: 700;
+      color: var(--success);
+      white-space: nowrap;
+    }
+
+    .bounty-table .platform-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    .status-dot.pending { background: var(--warning); }
+    .status-dot.paid { background: var(--success); }
+    .status-dot.submitted { background: var(--info); }
+
+    .btn-xs {
+      padding: 3px 8px;
+      font-size: 10px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .qualified-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      background: var(--success-light);
+      color: #065f46;
+    }
+
     /* ─── PANELS ─── */
     .panel {
       background: var(--surface);
@@ -573,7 +697,8 @@
     /* ─── RESPONSIVE ─── */
     @media (max-width: 1200px) {
       .dashboard-grid { grid-template-columns: 1fr; }
-      .panel { max-height: 500px; }
+      .dashboard-grid > .panel { max-height: 500px; }
+      .bottom-grid { grid-template-columns: 1fr; }
     }
 
     @media (max-width: 768px) {
@@ -701,6 +826,57 @@
       </div>
       <div class="card-scroll" id="githubList">
         <div class="card-empty"><span class="spinner"></span> Đang tự động quét GitHub, Gitcoin, Algora...</div>
+      </div>
+    </div>
+
+    <!-- 3-COLUMN BOTTOM GRID -->
+    <div class="bottom-grid">
+      <!-- QUALIFIED BOUNTIES -->
+      <div class="bottom-panel">
+        <div class="bottom-panel-header">
+          <div class="title-group">
+            <h3>🎯 Bounty Phù Hợp</h3>
+            <span class="count-badge" id="qualifiedBadge" style="display:none;">0</span>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost btn-sm" onclick="loadQualifiedBounties()">Làm mới</button>
+          </div>
+        </div>
+        <div class="panel-table-wrap" id="qualifiedList">
+          <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+        </div>
+      </div>
+
+      <!-- SUBMISSION HISTORY -->
+      <div class="bottom-panel">
+        <div class="bottom-panel-header">
+          <div class="title-group">
+            <h3>📝 Lịch Sử Nộp</h3>
+            <span class="count-badge" id="submissionBadge" style="display:none;">0</span>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost btn-sm" onclick="loadSubmissionHistory()">Làm mới</button>
+          </div>
+        </div>
+        <div class="panel-table-wrap" id="submissionList">
+          <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+        </div>
+      </div>
+
+      <!-- PAYMENT HISTORY -->
+      <div class="bottom-panel">
+        <div class="bottom-panel-header">
+          <div class="title-group">
+            <h3>💰 Lịch Sử Thanh Toán</h3>
+            <span class="count-badge" id="paymentBadge" style="display:none;">0</span>
+          </div>
+          <div class="actions">
+            <button class="btn-ghost btn-sm" onclick="loadPaymentHistory()">Làm mới</button>
+          </div>
+        </div>
+        <div class="panel-table-wrap" id="paymentList">
+          <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+        </div>
       </div>
     </div>
 
@@ -1190,14 +1366,177 @@
       } catch (e) { showNotif(e.message, 'error'); }
     }
 
+    // QUALIFIED BOUNTIES - Chỉ hiển thị bounty có tiền + phù hợp chuyên môn
+    async function loadQualifiedBounties() {
+      try {
+        const res = await fetch(`${API_BASE}/payments/qualified`);
+        const data = await res.json();
+        if (data.success) { renderQualifiedBounties(data.bounties || []); }
+      } catch (e) { /* im lặng */ }
+    }
+
+    function renderQualifiedBounties(bounties) {
+      const el = document.getElementById('qualifiedList');
+      const badge = document.getElementById('qualifiedBadge');
+
+      if (bounties.length === 0) {
+        el.innerHTML = '<div class="card-empty">Không có bounty phù hợp</div>';
+        badge.style.display = 'none';
+        return;
+      }
+
+      badge.textContent = bounties.length;
+      badge.style.display = '';
+
+      const html = `
+        <table class="bounty-table">
+          <thead>
+            <tr>
+              <th>Tiêu Đề</th>
+              <th>Tiền</th>
+              <th>Điểm</th>
+              <th>Nền Tảng</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${bounties.map(b => {
+              const analysis = JSON.parse(b.analysis || '{}');
+              const score = analysis.score || 0;
+              const platform = b.bounty_platform || b.platform || 'github';
+              return `
+                <tr>
+                  <td class="title-cell" title="${b.title}">${b.title}</td>
+                  <td class="amount-cell">$${b.budget || 0}</td>
+                  <td><span class="qualified-badge">${score}/100</span></td>
+                  <td class="platform-cell">
+                    <span class="status-dot" style="background: ${platform === 'algora' ? '#8b5cf6' : platform === 'gitcoin' ? '#3b82f6' : '#24292e'}"></span>
+                    ${platform.toUpperCase()}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+      el.innerHTML = html;
+    }
+
+    // SUBMISSION HISTORY - Lịch sử nộp bài
+    async function loadSubmissionHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/jobs?status=SUBMITTED`);
+        const data = await res.json();
+        if (data.success) { renderSubmissionHistory(data.jobs || []); }
+      } catch (e) { /* im lặng */ }
+    }
+
+    function renderSubmissionHistory(jobs) {
+      const el = document.getElementById('submissionList');
+      const badge = document.getElementById('submissionBadge');
+      const submitted = jobs.filter(j => j.submitted_at);
+
+      if (submitted.length === 0) {
+        el.innerHTML = '<div class="card-empty">Chưa nộp bài nào</div>';
+        badge.style.display = 'none';
+        return;
+      }
+
+      badge.textContent = submitted.length;
+      badge.style.display = '';
+
+      const html = `
+        <table class="bounty-table">
+          <thead>
+            <tr>
+              <th>Tiêu Đề</th>
+              <th>Ngày Nộp</th>
+              <th>Trạng Thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${submitted.map(j => {
+              const submittedDate = new Date(j.submitted_at).toLocaleDateString('vi-VN');
+              const status = j.status === 'COMPLETED' ? 'Hoàn thành' : j.status === 'ACCEPTED' ? 'Được chấp nhận' : 'Đang chờ';
+              const statusColor = j.status === 'COMPLETED' ? 'paid' : j.status === 'ACCEPTED' ? 'submitted' : 'pending';
+              return `
+                <tr>
+                  <td class="title-cell" title="${j.title}">${j.title}</td>
+                  <td>${submittedDate}</td>
+                  <td><span class="status-dot ${statusColor}"></span> ${status}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+      el.innerHTML = html;
+    }
+
+    // PAYMENT HISTORY - Lịch sử thanh toán
+    async function loadPaymentHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/payments`);
+        const data = await res.json();
+        if (data.success) { renderPaymentHistory(data.payments || []); }
+      } catch (e) { /* im lặng */ }
+    }
+
+    function renderPaymentHistory(payments) {
+      const el = document.getElementById('paymentList');
+      const badge = document.getElementById('paymentBadge');
+
+      if (payments.length === 0) {
+        el.innerHTML = '<div class="card-empty">Chưa có lịch sử thanh toán</div>';
+        badge.style.display = 'none';
+        return;
+      }
+
+      badge.textContent = payments.length;
+      badge.style.display = '';
+
+      const html = `
+        <table class="bounty-table">
+          <thead>
+            <tr>
+              <th>Bounty</th>
+              <th>Tiền</th>
+              <th>Trạng Thái</th>
+              <th>Ngày</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${payments.map(p => {
+              const paymentDate = p.payment_date ? new Date(p.payment_date).toLocaleDateString('vi-VN') : '-';
+              const statusColor = p.payment_status === 'paid' ? 'paid' : p.payment_status === 'submitted' ? 'submitted' : 'pending';
+              const statusText = p.payment_status === 'paid' ? 'Đã thanh toán' : p.payment_status === 'submitted' ? 'Đã nộp' : 'Chờ xử lý';
+              return `
+                <tr>
+                  <td class="title-cell" title="${p.bounty_title}">${p.bounty_title}</td>
+                  <td class="amount-cell">$${p.bounty_amount || 0}</td>
+                  <td><span class="status-dot ${statusColor}"></span> ${statusText}</td>
+                  <td>${paymentDate}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+      el.innerHTML = html;
+    }
+
     // KHỞI TẠO
     window.addEventListener('load', () => {
       connectWebSocket();
       loadJobs();
       loadContests();
       loadGithubBounties();
+      loadQualifiedBounties();
+      loadSubmissionHistory();
+      loadPaymentHistory();
       setInterval(loadContests, 30000);
       setInterval(loadGithubBounties, 30000);
+      setInterval(loadQualifiedBounties, 60000);
+      setInterval(loadPaymentHistory, 60000);
     });
   </script>
 </body>

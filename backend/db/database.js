@@ -102,11 +102,30 @@ async function initDB() {
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  await run(`CREATE TABLE IF NOT EXISTS payment_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    bounty_title TEXT NOT NULL,
+    bounty_amount REAL DEFAULT 0,
+    currency TEXT DEFAULT 'USD',
+    submission_date DATETIME,
+    completion_date DATETIME,
+    payment_date DATETIME,
+    payment_status TEXT DEFAULT 'pending',
+    payment_method TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (job_id) REFERENCES jobs(id)
+  )`);
+
   // Create indexes
   await run('CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status)');
   await run('CREATE INDEX IF NOT EXISTS idx_jobs_platform ON jobs(platform)');
   await run('CREATE INDEX IF NOT EXISTS idx_messages_job ON messages(job_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(reply_status)');
+  await run('CREATE INDEX IF NOT EXISTS idx_payment_job ON payment_history(job_id)');
+  await run('CREATE INDEX IF NOT EXISTS idx_payment_status ON payment_history(payment_status)');
 }
 
 module.exports = { initDB, run, all, get, getDB };
