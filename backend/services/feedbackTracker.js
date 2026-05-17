@@ -37,10 +37,23 @@ class FeedbackTracker {
 
       // Get issue comments
       const issueComments = await this.githubAPI.getIssueComments(owner, repo, issueNumber);
-      if (!issueComments.success) return { hasNewFeedback: false };
+      if (!issueComments.success) {
+        if (issueComments.error && issueComments.error.includes('404')) {
+          this.trackedIssues.delete(bountyId);
+          return { hasNewFeedback: false };
+        }
+        return { hasNewFeedback: false };
+      }
 
       // Get PR review comments
       const prReviews = prNumber ? await this.githubAPI.getPRReviews(owner, repo, prNumber) : null;
+      if (prReviews && !prReviews.success) {
+        if (prReviews.error && prReviews.error.includes('404')) {
+          // If PR reviews 404, the PR might be simulated or deleted
+          this.trackedIssues.delete(bountyId);
+          return { hasNewFeedback: false };
+        }
+      }
 
       // Filter new comments since last check
       const newComments = issueComments.comments.filter(c => {
@@ -206,7 +219,16 @@ I'll update the PR shortly.`;
 
     try {
       const prDetails = await this.githubAPI.getPRDetails(owner, repo, prNumber);
-      if (!prDetails.success) return null;
+      if (!prDetails.success) {
+        // If PR not found (e.g., simulated PRs), remove from tracking
+        if (prDetails.error && prDetails.error.includes('404')) {
+          console.log(`🗑️ Untracking simulated/non-existent PR ${owner}/${repo}#${prNumber}`);
+          this.trackedIssues.delete(bountyId);
+          return null; // Stop tracking this PR
+        }
+        console.warn(`⚠️ Error getting PR details for ${owner}/${repo}#${prNumber}:`, prDetails.error);
+        return null;
+      }
 
       return {
         state: prDetails.pr.state,
@@ -215,7 +237,7 @@ I'll update the PR shortly.`;
         reviews: prDetails.pr.reviews || 0,
       };
     } catch (err) {
-      console.error(`❌ Error checking PR status for ${bountyId}:`, err.message);
+      console.error(`❌ Unexpected error checking PR status for ${bountyId}:`, err.message);
       return null;
     }
   }

@@ -224,6 +224,7 @@ ${solutions.map(s => `- ${s.filePath}`).join('\n')}`
         prUrl: workResult.prUrl,
         prNumber: workResult.prNumber,
         testsPassed: workResult.testsPassed,
+        simulated: workResult.simulated || false,
         owner,
         repo,
       };
@@ -351,14 +352,18 @@ ${solutions.map(s => `- ${s.filePath}`).join('\n')}`
         return { bountyId: bounty.id, status: 'failed', error: workResult.error };
       }
 
-      // PHASE 2: Start Feedback Tracking
-      await this.startFeedbackTracking(
-        bounty,
-        workResult.prNumber,
-        workResult.owner,
-        workResult.repo,
-        issueNumber
-      );
+      // PHASE 2: Start Feedback Tracking (only if real PR)
+      if (!workResult.simulated) {
+        await this.startFeedbackTracking(
+          bounty,
+          workResult.prNumber,
+          workResult.owner,
+          workResult.repo,
+          issueNumber
+        );
+      } else {
+        console.log(`\n⏭️ Skipped feedback tracking (PR is simulated)`);
+      }
 
       // Update database
       await run(

@@ -388,6 +388,7 @@ class WorkExecutor {
         success: prResult.success,
         prUrl: prResult.prUrl,
         prNumber: prResult.prNumber,
+        simulated: prResult.simulated || false,
         testsPassed: testResult.passed,
         testOutput: testResult.output,
       };
