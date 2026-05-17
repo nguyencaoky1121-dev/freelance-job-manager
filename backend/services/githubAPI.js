@@ -464,6 +464,104 @@ class GitHubAPI {
       };
     }
   }
+
+  /**
+   * Get issue comments
+   */
+  async getIssueComments(owner, repo, issueNumber) {
+    try {
+      const headers = this.token ? {
+        'Authorization': `token ${this.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      } : {
+        'Accept': 'application/vnd.github.v3+json',
+      };
+
+      const response = await axios.get(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+        { headers, timeout: 10000 }
+      );
+
+      return {
+        success: true,
+        comments: response.data || [],
+      };
+    } catch (error) {
+      console.error(`❌ Error getting issue comments ${owner}/${repo}#${issueNumber}:`, error.message);
+      return {
+        success: false,
+        error: error.message,
+        comments: [],
+      };
+    }
+  }
+
+  /**
+   * Get repository content
+   */
+  async getRepoContent(owner, repo, path = '') {
+    try {
+      const headers = this.token ? {
+        'Authorization': `token ${this.token}`,
+        'Accept': 'application/vnd.github.v3+json',
+      } : {
+        'Accept': 'application/vnd.github.v3+json',
+      };
+
+      const response = await axios.get(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/contents/${path}`,
+        { headers, timeout: 10000 }
+      );
+
+      return {
+        success: true,
+        content: response.data,
+      };
+    } catch (error) {
+      console.error(`❌ Error getting repo content ${owner}/${repo}/${path}:`, error.message);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
+
+  /**
+   * Fork repository
+   */
+  async forkRepository(owner, repo) {
+    try {
+      if (!this.token) {
+        return {
+          success: false,
+          error: 'GitHub token required to fork repository',
+        };
+      }
+
+      const response = await axios.post(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/forks`,
+        {},
+        {
+          headers: {
+            'Authorization': `token ${this.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+          timeout: 10000,
+        }
+      );
+
+      return {
+        success: true,
+        fork: response.data,
+      };
+    } catch (error) {
+      console.error(`❌ Error forking ${owner}/${repo}:`, error.message);
+      return {
+        success: false,
+        error: error.message,
+      };
+    }
+  }
 }
 
 module.exports = { GitHubAPI };
