@@ -912,19 +912,27 @@
     </div>
 
     <!-- AUTONOMOUS WORK CONTROL PANEL -->
-    <div class="bottom-panel" style="grid-column: 1 / -1;">
-      <div class="bottom-panel-header">
+    <div class="bottom-panel" style="grid-column: 1 / -1; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none; box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);">
+      <div class="bottom-panel-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
         <div class="title-group">
-          <h3>🤖 Tự Động Xử Lý Công Việc</h3>
-          <span class="count-badge" id="autoworkBadge" style="display:none;">0</span>
+          <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">🤖</span>
+            <span>Tự Động Xử Lý Công Việc</span>
+            <span class="count-badge" id="autoworkBadge" style="display:none; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">0</span>
+          </h3>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 4px;">Hệ thống AI tự động phân tích, nhận việc, code và nộp PR</p>
         </div>
         <div class="actions">
-          <button class="btn-primary btn-sm" onclick="startAutoworkPipeline()" id="btnStartAutowork">Bắt Đầu</button>
-          <button class="btn-ghost btn-sm" onclick="loadAutoworkStatus()" id="btnRefreshAutowork">Làm mới</button>
+          <button class="btn-sm" onclick="startAutoworkPipeline()" id="btnStartAutowork" style="background: white; color: #667eea; font-weight: 600; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            ▶️ Bắt Đầu
+          </button>
+          <button class="btn-sm" onclick="loadAutoworkStatus()" id="btnRefreshAutowork" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">
+            🔄 Làm mới
+          </button>
         </div>
       </div>
-      <div class="panel-table-wrap" id="autoworkPanel">
-        <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+      <div id="autoworkPanel" style="padding: 20px;">
+        <div class="card-empty" style="color: rgba(255,255,255,0.9);"><span class="spinner"></span> Đang tải...</div>
       </div>
     </div>
 
@@ -1000,6 +1008,12 @@
         loadJobs();
       } else if (data.type === 'SCAN_COMPLETE') {
         showNotif(`Quét xong: ${data.results.new} việc mới`, 'success');
+      } else if (data.type === 'AUTOWORK_UPDATE') {
+        showNotif(`Autowork: ${data.title} - ${data.result?.status || 'done'}`, 'success');
+        loadAutoworkStatus();
+      } else if (data.type === 'AUTOWORK_BATCH_STARTED') {
+        showNotif(`Bắt đầu xử lý ${data.count} bounty`, 'info');
+        loadAutoworkStatus();
       }
     }
 
@@ -1743,15 +1757,16 @@
     async function startAutoworkPipeline() {
       const btn = document.getElementById('btnStartAutowork');
       btn.disabled = true;
-      btn.textContent = 'Đang xử lý...';
+      btn.innerHTML = '<span class="spinner" style="border-color: #667eea; border-top-color: transparent;"></span> Đang xử lý...';
 
       try {
         const res = await fetch(`${API_BASE}/autowork/process-all`, { method: 'POST' });
         const data = await res.json();
 
         if (data.success) {
-          showNotif(`Bắt đầu xử lý ${data.processed || 0} công việc`, 'success');
+          showNotif(`Bắt đầu xử lý ${data.processing || 0} công việc`, 'success');
           loadAutoworkStatus();
+          loadAutoworkHistory();
         } else {
           showNotif(`Lỗi: ${data.error}`, 'error');
         }
@@ -1759,71 +1774,222 @@
         showNotif(`Lỗi: ${err.message}`, 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Bắt Đầu';
+        btn.innerHTML = '▶️ Bắt Đầu';
+      }
+    }
+
+    async function analyzeAutoworkBounty(bountyId) {
+      try {
+        showNotif('Đang phân tích...', 'info');
+        const res = await fetch(`${API_BASE}/autowork/analyze/${bountyId}`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          const a = data.analysis || {};
+          showNotif(`Phân tích xong: ${data.title} - ${a.taskType || 'N/A'} (${a.complexity || 'N/A'})`, 'success');
+          loadAutoworkStatus();
+        } else {
+          showNotif(`Lỗi: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        showNotif(`Lỗi: ${err.message}`, 'error');
+      }
+    }
+
+    async function processAutoworkBounty(bountyId) {
+      try {
+        showNotif('Bắt đầu xử lý bounty...', 'info');
+        const res = await fetch(`${API_BASE}/autowork/process/${bountyId}`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          const r = data.result || {};
+          if (r.prUrl) {
+            showNotif(`PR đã tạo: ${r.prUrl}`, 'success');
+          } else {
+            showNotif(`Kết quả: ${r.status || 'done'}`, 'success');
+          }
+          loadAutoworkStatus();
+          loadAutoworkHistory();
+        } else {
+          showNotif(`Lỗi: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        showNotif(`Lỗi: ${err.message}`, 'error');
       }
     }
 
     async function loadAutoworkStatus() {
       try {
-        const res = await fetch(`${API_BASE}/autowork/status`);
-        const data = await res.json();
+        const [statusRes, historyRes] = await Promise.all([
+          fetch(`${API_BASE}/autowork/status`),
+          fetch(`${API_BASE}/autowork/history`).catch(() => null),
+        ]);
+        const statusData = await statusRes.json();
+        const historyData = historyRes ? await historyRes.json() : { success: false };
 
         const el = document.getElementById('autoworkPanel');
-        if (!data.success) {
-          el.innerHTML = `<div class="card-empty">Lỗi: ${data.error}</div>`;
+        if (!statusData.success) {
+          el.innerHTML = `<div style="color: rgba(255,255,255,0.7); text-align:center; padding:20px;">Lỗi: ${statusData.error}</div>`;
           return;
         }
 
-        const { activeJobs, jobs } = data;
+        const { activeJobs, jobs } = statusData;
+        const history = historyData.success ? historyData.history || [] : [];
+        const summary = historyData.success ? historyData.summary || {} : {};
 
-        if (activeJobs === 0) {
-          el.innerHTML = `<div class="card-empty">Không có công việc đang xử lý</div>`;
-          return;
-        }
+        let html = '';
 
-        let html = `
-          <table class="panel-table">
-            <thead>
-              <tr>
-                <th>ID Công Việc</th>
-                <th>Trạng Thái</th>
-                <th>Thời Gian (ms)</th>
-              </tr>
-            </thead>
-            <tbody>
+        // Summary cards
+        html += `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: white;">${activeJobs}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">⚙️ Đang Xử Lý</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: white;">${summary.total || 0}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">📊 Tổng Đã Xử Lý</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: #4ade80;">${summary.completed || 0}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">✅ Hoàn Thành</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: #fbbf24;">${summary.inProgress || 0}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">🔄 Đang Tiến Hành</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: #34d399;">$${summary.totalEarnings || 0}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">💰 Tổng Thu Nhập</div>
+            </div>
+          </div>
         `;
 
-        jobs.forEach(job => {
-          const statusEmoji = {
-            'analyzing': '📊',
-            'accepting': '✅',
-            'generating': '🔧',
-            'executing': '⚙️',
-            'monitoring': '👀',
-            'completed': '✨',
-            'failed': '❌'
-          }[job.status] || '⏳';
+        // Active jobs section
+        if (activeJobs > 0 && jobs.length > 0) {
+          html += `<h4 style="color: white; margin-bottom: 12px; font-size: 14px;">⚡ Công Việc Đang Xử Lý</h4>`;
+          html += `<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">`;
+          jobs.forEach(job => {
+            const statusMap = {
+              'analyzing': { emoji: '📊', label: 'Phân tích', color: '#60a5fa' },
+              'accepting': { emoji: '✅', label: 'Nhận việc', color: '#4ade80' },
+              'generating': { emoji: '🔧', label: 'Tạo code', color: '#fbbf24' },
+              'executing': { emoji: '⚙️', label: 'Thực thi', color: '#f97316' },
+              'monitoring': { emoji: '👀', label: 'Giám sát', color: '#a78bfa' },
+              'completed': { emoji: '✨', label: 'Hoàn thành', color: '#34d399' },
+              'failed': { emoji: '❌', label: 'Thất bại', color: '#f87171' },
+            };
+            const s = statusMap[job.status] || { emoji: '⏳', label: job.status, color: '#94a3b8' };
+            const durationSec = Math.round(job.duration / 1000);
+
+            html += `
+              <div style="background: rgba(255,255,255,0.1); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; border: 1px solid rgba(255,255,255,0.15);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <span style="font-size: 20px;">${s.emoji}</span>
+                  <div>
+                    <div style="color: white; font-weight: 600; font-size: 13px;">${job.id.substring(0, 12)}...</div>
+                    <div style="color: ${s.color}; font-size: 12px; font-weight: 500;">${s.label}</div>
+                  </div>
+                </div>
+                <div style="color: rgba(255,255,255,0.7); font-size: 12px;">${durationSec}s</div>
+              </div>
+            `;
+          });
+          html += `</div>`;
+        }
+
+        // History section
+        if (history.length > 0) {
+          html += `<h4 style="color: white; margin-bottom: 12px; font-size: 14px;">📋 Lịch Sử Xử Lý (gần nhất)</h4>`;
+          html += `<div style="overflow-x: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);">`;
+          html += `
+            <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+              <thead>
+                <tr style="background: rgba(255,255,255,0.1);">
+                  <th style="text-align: left; padding: 10px 14px; color: rgba(255,255,255,0.9); font-weight: 600;">Tiêu đề</th>
+                  <th style="text-align: left; padding: 10px 14px; color: rgba(255,255,255,0.9); font-weight: 600;">Platform</th>
+                  <th style="text-align: right; padding: 10px 14px; color: rgba(255,255,255,0.9); font-weight: 600;">Budget</th>
+                  <th style="text-align: center; padding: 10px 14px; color: rgba(255,255,255,0.9); font-weight: 600;">Trạng thái</th>
+                  <th style="text-align: center; padding: 10px 14px; color: rgba(255,255,255,0.9); font-weight: 600;">Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          history.slice(0, 10).forEach(job => {
+            const statusBadge = {
+              'COMPLETED': '<span style="background: #059669; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">Hoàn thành</span>',
+              'IN_PROGRESS': '<span style="background: #d97706; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">Đang làm</span>',
+              'SUBMITTED': '<span style="background: #2563eb; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">Đã nộp</span>',
+              'SKIPPED': '<span style="background: #6b7280; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">Bỏ qua</span>',
+              'FAILED': '<span style="background: #dc2626; color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">Thất bại</span>',
+            }[job.status] || `<span style="background: rgba(255,255,255,0.2); color: white; padding: 3px 10px; border-radius: 20px; font-size: 11px;">${job.status}</span>`;
+
+            const platformBadge = {
+              'github': '🐙 GitHub',
+              'gitcoin': '🟢 Gitcoin',
+              'algora': '🔵 Algora',
+              'freelancer': '💼 Freelancer',
+            }[job.platform] || job.platform || 'N/A';
+
+            html += `
+              <tr style="border-top: 1px solid rgba(255,255,255,0.08);">
+                <td style="padding: 10px 14px; color: white; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  ${job.project_url ? `<a href="${job.project_url}" target="_blank" style="color: #93c5fd; text-decoration: none;">${job.title}</a>` : job.title}
+                </td>
+                <td style="padding: 10px 14px; color: rgba(255,255,255,0.8);">${platformBadge}</td>
+                <td style="padding: 10px 14px; color: #34d399; font-weight: 600; text-align: right;">$${job.budget || 0}</td>
+                <td style="padding: 10px 14px; text-align: center;">${statusBadge}</td>
+                <td style="padding: 10px 14px; text-align: center;">
+                  <button onclick="processAutoworkBounty('${job.id}')" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25); color: white; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-size: 11px;">⚡ Xử lý</button>
+                </td>
+              </tr>
+            `;
+          });
 
           html += `
-            <tr>
-              <td><code>${job.id}</code></td>
-              <td>${statusEmoji} ${job.status}</td>
-              <td>${job.duration}ms</td>
-            </tr>
-          `;
-        });
+              </tbody>
+            </table>
+          </div>`;
+        }
 
-        html += `
-            </tbody>
-          </table>
-        `;
+        // Empty state
+        if (activeJobs === 0 && history.length === 0) {
+          html += `
+            <div style="text-align: center; padding: 40px 20px;">
+              <div style="font-size: 48px; margin-bottom: 16px;">🤖</div>
+              <div style="color: white; font-weight: 600; font-size: 16px; margin-bottom: 8px;">Sẵn sàng làm việc</div>
+              <div style="color: rgba(255,255,255,0.7); font-size: 13px; max-width: 400px; margin: 0 auto;">
+                Nhấn <strong>"▶️ Bắt Đầu"</strong> để hệ thống tự động quét, phân tích, nhận việc và tạo Pull Request cho các bounty phù hợp.
+              </div>
+            </div>
+          `;
+        }
 
         el.innerHTML = html;
-        document.getElementById('autoworkBadge').textContent = activeJobs;
-        document.getElementById('autoworkBadge').style.display = 'inline-block';
+
+        if (activeJobs > 0) {
+          document.getElementById('autoworkBadge').textContent = activeJobs;
+          document.getElementById('autoworkBadge').style.display = 'inline-block';
+        } else {
+          document.getElementById('autoworkBadge').style.display = 'none';
+        }
       } catch (err) {
         console.error('Error loading autowork status:', err);
-        document.getElementById('autoworkPanel').innerHTML = `<div class="card-empty">Lỗi: ${err.message}</div>`;
+        document.getElementById('autoworkPanel').innerHTML = `<div style="color: rgba(255,255,255,0.7); text-align:center; padding:20px;">Lỗi: ${err.message}</div>`;
+      }
+    }
+
+    async function loadAutoworkHistory() {
+      try {
+        const res = await fetch(`${API_BASE}/autowork/history`);
+        const data = await res.json();
+        if (data.success) {
+          loadAutoworkStatus();
+        }
+      } catch (err) {
+        console.error('Error loading autowork history:', err);
       }
     }
 
