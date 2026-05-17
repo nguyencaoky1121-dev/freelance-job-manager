@@ -880,6 +880,21 @@
       </div>
     </div>
 
+    <!-- CRYPTO WALLET PANEL -->
+    <div class="bottom-panel" style="grid-column: 1 / -1;">
+      <div class="bottom-panel-header">
+        <div class="title-group">
+          <h3>🪙 Ví Crypto Binance</h3>
+        </div>
+        <div class="actions">
+          <button class="btn-ghost btn-sm" onclick="loadCryptoSummary()">Làm mới</button>
+        </div>
+      </div>
+      <div class="panel-table-wrap" id="cryptoPanel">
+        <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1524,6 +1539,88 @@
       el.innerHTML = html;
     }
 
+    // CRYPTO WALLET - Ví Binance
+    async function loadCryptoSummary() {
+      try {
+        const res = await fetch(`${API_BASE}/crypto/summary`);
+        const data = await res.json();
+        if (data.success) { renderCryptoSummary(data.summary); }
+      } catch (e) { /* im lặng */ }
+    }
+
+    function renderCryptoSummary(summary) {
+      const el = document.getElementById('cryptoPanel');
+      const wallet = summary.wallet || {};
+      const deposits = summary.recentDeposits || [];
+
+      const html = `
+        <div style="padding: 20px;">
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <!-- Wallet Info Card -->
+            <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Địa Chỉ Ví</div>
+              <div style="font-family: monospace; font-size: 12px; word-break: break-all; color: var(--text); margin-bottom: 8px;">${wallet.address || 'N/A'}</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Mạng: <strong>${wallet.network || 'TRC20'}</strong></div>
+            </div>
+
+            <!-- Balance Card -->
+            <div style="background: var(--success-light); border: 1px solid var(--success); border-radius: var(--radius); padding: 16px;">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Số Dư USDT</div>
+              <div style="font-size: 24px; font-weight: 600; color: var(--success); margin-bottom: 4px;">${summary.usdtBalance.toFixed(2)} USDT</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">≈ ${(summary.usdtBalance * summary.exchangeRate).toLocaleString('vi-VN')} VND</div>
+            </div>
+
+            <!-- Total Received Card -->
+            <div style="background: var(--info-light); border: 1px solid var(--info); border-radius: var(--radius); padding: 16px;">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Tổng Nhận</div>
+              <div style="font-size: 24px; font-weight: 600; color: var(--info); margin-bottom: 4px;">${summary.totalReceived.toFixed(2)} USDT</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">≈ ${summary.totalReceivedVND.toLocaleString('vi-VN')} VND</div>
+            </div>
+
+            <!-- Exchange Rate Card -->
+            <div style="background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px;">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">Tỷ Giá</div>
+              <div style="font-size: 24px; font-weight: 600; color: var(--text); margin-bottom: 4px;">1 USDT = ${summary.exchangeRate.toLocaleString('vi-VN')} VND</div>
+              <div style="font-size: 12px; color: var(--text-secondary);">Cập nhật: ${new Date(summary.lastCheck).toLocaleTimeString('vi-VN')}</div>
+            </div>
+          </div>
+
+          <!-- Recent Deposits Table -->
+          ${deposits.length > 0 ? `
+            <div style="margin-top: 20px;">
+              <div style="font-weight: 600; margin-bottom: 12px; color: var(--text);">Giao Dịch Gần Đây</div>
+              <table class="bounty-table">
+                <thead>
+                  <tr>
+                    <th>Số Tiền</th>
+                    <th>Địa Chỉ</th>
+                    <th>Trạng Thái</th>
+                    <th>Ngày</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${deposits.map(d => {
+                    const depositDate = new Date(d.insertTime).toLocaleDateString('vi-VN');
+                    const statusText = d.status === 1 ? 'Thành công' : 'Chờ xử lý';
+                    const statusColor = d.status === 1 ? 'paid' : 'pending';
+                    return `
+                      <tr>
+                        <td class="amount-cell"><strong>${d.amount.toFixed(2)} USDT</strong></td>
+                        <td style="font-family: monospace; font-size: 12px;">${d.address.substring(0, 20)}...</td>
+                        <td><span class="status-dot ${statusColor}"></span> ${statusText}</td>
+                        <td>${depositDate}</td>
+                      </tr>
+                    `;
+                  }).join('')}
+                </tbody>
+              </table>
+            </div>
+          ` : '<div style="color: var(--text-secondary); font-size: 14px;">Chưa có giao dịch nào</div>'}
+        </div>
+      `;
+      el.innerHTML = html;
+    }
+
     // KHỞI TẠO
     window.addEventListener('load', () => {
       connectWebSocket();
@@ -1533,10 +1630,12 @@
       loadQualifiedBounties();
       loadSubmissionHistory();
       loadPaymentHistory();
+      loadCryptoSummary();
       setInterval(loadContests, 30000);
       setInterval(loadGithubBounties, 30000);
       setInterval(loadQualifiedBounties, 60000);
       setInterval(loadPaymentHistory, 60000);
+      setInterval(loadCryptoSummary, 60000);
     });
   </script>
 </body>

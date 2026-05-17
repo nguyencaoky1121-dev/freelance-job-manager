@@ -12,6 +12,7 @@ const actionsRoutes = require('./routes/actions');
 const contestRoutes = require('./routes/contests');
 const githubRoutes = require('./routes/github');
 const paymentsRoutes = require('./routes/payments');
+const cryptoRoutes = require('./routes/crypto');
 const { router: monitorRoutes, monitor } = require('./routes/monitor');
 const { JobScanner } = require('./services/jobScanner');
 const { JobMonitor } = require('./services/jobMonitor');
@@ -34,6 +35,7 @@ app.use('/api/actions', actionsRoutes);
 app.use('/api/contests', contestRoutes);
 app.use('/api/github', githubRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/crypto', cryptoRoutes);
 app.use('/api/monitor', monitorRoutes);
 
 // Serve frontend (for all routes not matched)
