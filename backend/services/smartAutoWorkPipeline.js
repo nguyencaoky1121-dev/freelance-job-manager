@@ -107,28 +107,29 @@ class SmartAutoWorkPipeline {
 
       if (analysis.workCategory === 'STRATEGIC') {
         acceptanceComment += `I've performed a deep analysis on the requirements for **${bounty.title}** and I'm confident I can deliver an exceptional solution.\n\n` +
-          `**My Strategic Approach:**\n${analysis.suggestedApproach}\n\n` +
-          `**Planned Deliverables:**\n${analysis.acceptanceCriteria.map((c, i) => `- [ ] ${c}`).join('\n')}\n\n` +
-          `I am starting work immediately on this high-value task.`;
+          `**🎯 Strategic Approach:**\n${analysis.suggestedApproach}\n\n` +
+          `**✅ Planned Deliverables & Acceptance Criteria:**\n${analysis.acceptanceCriteria.map((c, i) => `- [ ] ${c}`).join('\n')}\n\n` +
+          `I am commencing work immediately on this high-value task to ensure a premium delivery.`;
       } else if (analysis.workCategory === 'BRAND') {
-        acceptanceComment += `I'd love to contribute to this open-source project by helping with: **${bounty.title}**.\n\n` +
-          `I will quickly implement the changes and verify them against your guidelines.\n` +
-          `Thank you for maintaining this repository!`;
+        acceptanceComment += `I'm excited to contribute to this open-source project by helping with: **${bounty.title}**.\n\n` +
+          `My aim is to deliver a quick, clean, and compliant solution that aligns with your project's guidelines.\n\n` +
+          `Thank you for maintaining this valuable repository!`;
       } else {
-        acceptanceComment += `**My Analysis:**
+        // Default AUTO strategy
+        acceptanceComment += `**📊 Initial Analysis:**
 - Task Type: ${analysis.taskType}
 - Difficulty: ${analysis.complexity}
 - Estimated Time: ${analysis.estimatedHours} hours
 - Tech Stack: ${analysis.techStack.join(', ')}
 - Task Clarity: ${(analysis.taskClarity.score * 100).toFixed(0)}%
 
-**Approach:**
+**🚀 Proposed Approach:**
 ${analysis.suggestedApproach}
 
-**Acceptance Criteria:**
+**✔️ Acceptance Criteria:**
 ${analysis.acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
 
-I'll start working on this right away and will submit a PR with a complete solution.`;
+I'll begin implementation shortly and will submit a PR with a complete solution once finished.`;
       }
 
       const commentResult = await this.githubAPI.postComment(
@@ -219,7 +220,7 @@ I'll start working on this right away and will submit a PR with a complete solut
       let prDescription = `/claim #${issueNumber}\n\n`;
 
       if (analysis.workCategory === 'STRATEGIC') {
-        prDescription += `## 🏆 Elite Premium Solution for: ${bounty.title}
+        prDescription += `## 🏆 Premium Solution for: ${bounty.title}
 
 ### 🎯 Key Highlights
 - **Engineered Approach:** Crafted a perfect, production-ready implementation tailored to your exact guidelines.

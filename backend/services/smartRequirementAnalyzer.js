@@ -116,6 +116,13 @@ class SmartRequirementAnalyzer {
     else if (budget > 50) score += 1;
 
     // Keyword-based
+    // Add style keywords to complexity factors
+    for (const style of ['glassmorphism', 'neo-brutalism', 'dark luxury', 'minimalist', 'vintage']) {
+      if (text.includes(style)) {
+        score += 1; // Increase score for specific styles
+      }
+    }
+
     for (const [level, factors] of Object.entries(this.complexityFactors)) {
       const matches = factors.keywords.filter(kw => text.includes(kw)).length;
       if (matches > 0) {
@@ -264,6 +271,11 @@ class SmartRequirementAnalyzer {
     if (text.length > 200) confidence += 0.1;
     if (text.includes('acceptance criteria')) confidence += 0.1;
     if (text.includes('example') || text.includes('screenshot')) confidence += 0.1;
+
+    // Specific design keywords (style, color, etc.) increase confidence
+    const designKeywords = ['glassmorphism', 'neo-brutalism', 'dark luxury', 'palette', 'hex', 'color', 'pixel', 'size', 'dimension'];
+    const designMatches = designKeywords.filter(kw => text.includes(kw)).length;
+    if (designMatches > 0) confidence += 0.1;
 
     // Decrease confidence if vague
     if (text.includes('maybe') || text.includes('possibly')) confidence -= 0.1;
