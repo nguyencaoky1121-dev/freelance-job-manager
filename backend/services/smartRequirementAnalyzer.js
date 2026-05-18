@@ -24,7 +24,7 @@ class SmartRequirementAnalyzer {
         difficulty: 'medium',
       },
       'asset_creation': {
-        keywords: ['pixel art', 'image', 'design', 'graphic', 'art', 'create asset', 'generate image'],
+        keywords: ['pixel art', 'image', 'design', 'graphic', 'art', 'create asset', 'generate image', 'logo', 'banner', 'ui design', 'ux', 'mockup', 'flyer', 'business card', 'thumbnail', 'icon', 'svg', 'illustration'],
         difficulty: 'easy',
       },
     };
