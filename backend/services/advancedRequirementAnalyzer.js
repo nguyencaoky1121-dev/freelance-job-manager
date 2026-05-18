@@ -37,9 +37,24 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
       commentAnalysis,
       taskClarity,
       budget,
+      // NEW: Categorize the work strategy
+      workCategory: this.determineWorkCategory(budget, taskClarity.score, baseAnalysis.taskType),
       isRealTask: taskClarity.score >= 0.6 && budget > 0,
-      shouldAutoExecute: budget > 0 && budget < 10 && taskClarity.score >= 0.7,
+      shouldAutoExecute: budget > 0 && budget < 50 && taskClarity.score >= 0.6,
     };
+  }
+
+  /**
+   * Determine the best work strategy for this bounty
+   */
+  determineWorkCategory(budget, clarity, taskType) {
+    if (budget >= 100 || (budget > 50 && clarity > 0.8)) {
+      return 'STRATEGIC'; // High value, needs perfect execution
+    }
+    if (budget === 0 || (budget < 20 && taskType === 'documentation')) {
+      return 'BRAND'; // Low value, focus on profile building
+    }
+    return 'AUTO'; // Medium value, focus on speed and quantity
   }
 
   /**
@@ -196,6 +211,12 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
 
     // Has code examples
     if (codeExamples.length > 0) score += 0.2;
+
+    // Has specific design style requirements
+    const designStyles = ['glassmorphism', 'neo-brutalism', 'dark luxury', 'minimalist', 'vintage'];
+    if (designStyles.some(style => description.toLowerCase().includes(style))) {
+      score += 0.15;
+    }
 
     // Avoid vague language
     const vagueKeywords = ['maybe', 'possibly', 'unclear', 'not sure', 'tbd', 'todo'];
