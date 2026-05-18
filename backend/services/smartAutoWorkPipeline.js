@@ -384,17 +384,29 @@ Changes implemented and tested locally. All acceptance criteria addressed.
 
       console.log(`📝 Sending /attempt command for ${bounty.title}`);
 
-      let planHeader = `🚀 **Strategy & Implementation Plan**\n\n`;
+      let planHeader = `🚀 **Implementation Roadmap & Strategy**\n\n`;
       if (analysis.workCategory === 'STRATEGIC') {
-        planHeader = `🏆 **Strategic Implementation Roadmap**\n*Leveraging advanced design principles and production-grade engineering.*\n\n`;
+        planHeader = `🏆 **Strategic Implementation Roadmap**\n*Leveraging advanced engineering principles and production-grade specifications.*\n\n`;
       } else if (analysis.workCategory === 'BRAND') {
-        planHeader = `🤝 **Contribution Strategy**\n*Focusing on high-quality integration and community alignment.*\n\n`;
+        planHeader = `🤝 **Community Contribution Strategy**\n*Focusing on high-quality integration and long-term codebase health.*\n\n`;
       }
+
+      const formattedPlan = analysis.suggestedApproach
+        .split('\n')
+        .map(line => {
+          if (line.match(/^\d+\./)) {
+            // Highlighting headers
+            return `**${line}**`;
+          }
+          return line;
+        })
+        .join('\n');
 
       const attemptComment = `/attempt #${issueNumber}\n\n` +
         `${planHeader}` +
-        `${analysis.suggestedApproach}\n\n` +
-        `**Commitment:** I will deliver a high-quality solution addressing all criteria precisely. Starting now.`;
+        `${formattedPlan}\n\n` +
+        `**🎯 Our Commitment:**\n` +
+        `We will deliver a flawless, high-performing solution that precisely aligns with your repository standard. Work commences immediately.`;
 
       const attemptResult = await this.githubAPI.postComment(owner, repo, issueNumber, attemptComment);
       return attemptResult;

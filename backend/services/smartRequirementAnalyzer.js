@@ -236,35 +236,34 @@ class SmartRequirementAnalyzer {
   suggestApproach(text, criteria = [], files = []) {
     const steps = [];
 
-    // If we have specific criteria or files, use them to build a dynamic plan
+    // If we have specific criteria or files, build a highly targeted plan
     if (criteria.length > 0 || files.length > 0) {
       steps.push('1. 🔍 Comprehensive Requirement Analysis');
-      steps.push(`   - Analyze core objective: ${text.substring(0, 50)}...`);
+      steps.push(`   - Core Objective: ${text.substring(0, 50).trim()}...`);
 
       if (files.length > 0) {
-        steps.push('2. 🛠️ Environment & Architecture Setup');
-        steps.push(`   - Prepare target files: ${files.slice(0, 3).join(', ')}`);
+        steps.push('2. 🏗️ Architectural Setup & Environment Review');
+        steps.push(`   - Target components: ${files.slice(0, 3).join(', ')}`);
       } else {
-        steps.push('2. 🏗️ Structural Design & Scaffolding');
+        steps.push('2. 🏗️ Structural Scaffolding & Component Design');
       }
 
-      steps.push('3. 💻 Core Implementation Phase');
+      steps.push('3. 💻 Core Logic Implementation Phase');
       criteria.slice(0, 3).forEach((c, i) => {
-        steps.push(`   - Address key requirement: ${c.substring(0, 60)}${c.length > 60 ? '...' : ''}`);
+        steps.push(`   - Address key requirement: ${c.substring(0, 60).trim()}${c.length > 60 ? '...' : ''}`);
       });
 
-      steps.push('4. 🧪 Rigorous Testing & QA');
+      steps.push('4. 🧪 Rigorous QA & Verification Loop');
       steps.push('   - Verify all acceptance criteria against implementation');
-      steps.push('   - Perform regression testing to ensure stability');
+      steps.push('   - Perform edge-case stress tests and regression checks');
 
-      steps.push('5. 🚀 Final Optimization & Submission');
-      steps.push('   - Code cleanup and performance tuning');
-      steps.push('   - Submit detailed PR with implementation evidence');
+      steps.push('5. 🚀 Final Polish & Submission');
+      steps.push('   - Code optimization, documentation, and PR creation');
 
       return steps.join('\n');
     }
 
-    // Fallback to patterns if no specific data
+    // Fallback to pattern-based plans if no detailed data
     if (text.includes('bug')) {
       steps.push('1. Reproduce the bug with a test case');
       steps.push('2. Identify root cause');

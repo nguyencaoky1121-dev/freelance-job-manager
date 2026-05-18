@@ -94,7 +94,36 @@ npm run dev
 http://localhost:3000
 ```
 
-## 📊 Core Services
+## 📜 Project Rules & Best Practices
+
+### 📂 Project Structure & Naming
+- **Domain-Driven**: Organize by feature domain (e.g., `services/`, `routes/`, `db/`), not by technical type.
+- **Naming**: 
+  - `camelCase` for variables, functions, and methods.
+  - `PascalCase` for Classes and Components.
+  - `UPPER_SNAKE_CASE` for constants.
+  - **Rationale**: Standard conventions maintain readability and consistency across the team.
+
+### 🗄️ Database Migrations
+- **Schema Changes**: All changes to the database schema MUST be applied via idempotent migration scripts or `initDB` logic to prevent duplication errors.
+- **Safety**: Always backup or test schema changes in a staging environment before applying to production.
+
+### 💻 Developer Commands
+- `npm run dev` : Start development server.
+- `npm run db:init` : Initialize or sync the SQLite database schema.
+- `npm install` : Install all project dependencies.
+
+### 🛡️ Best Practices (The "Strategic" Way)
+- **Error Handling**: Explicitly handle errors; never silently swallow them. Log detailed context for server-side debugging.
+- **Input Validation**: Validate all inputs at system boundaries (e.g., API endpoints) using schema validation.
+- **Code Reuse**: Prefer extracting reusable logic into shared utility services over speculative abstraction.
+
+### 🚫 Anti-Patterns (What to Avoid)
+- **Hardcoded Logic**: Never hardcode business logic, configuration, or secrets. Use environment variables and constants.
+- **Deep Nesting**: Avoid nesting > 4 levels. Use early returns to keep functions flat and readable.
+- **Vague Comments**: Avoid "generic" or "TODO" comments. If a comment exists, it MUST explain the **WHY** behind complex logic.
+- **Mutation**: Never mutate objects or arrays in-place. Always return new copies (immutable pattern).
+
 
 ### SmartRequirementAnalyzer
 - Analyzes bounty requirements using keyword matching
