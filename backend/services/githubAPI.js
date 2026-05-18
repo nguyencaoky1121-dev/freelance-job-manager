@@ -561,6 +561,8 @@ class GitHubAPI {
         error: error.message,
       };
     }
+  }
+
   /**
    * Check if a bounty issue is already solved or has winners
    */
