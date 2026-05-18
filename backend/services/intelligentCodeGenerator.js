@@ -1,11 +1,17 @@
 const { CodeGeneratorEngine } = require('./codeGeneratorEngine');
+const { generateLogo, generateBanner, generateWebMockup, generateFlyer, generateSocialPost } = require('./designGenerator');
 
 class IntelligentCodeGenerator extends CodeGeneratorEngine {
   /**
    * Generate real solution based on deep analysis
    */
   generateRealSolution(analysis, issueData) {
-    const { mentionedFiles, codeExamples, acceptanceCriteria, requirements } = analysis;
+    const { mentionedFiles, codeExamples, acceptanceCriteria, requirements, taskType } = analysis;
+
+    // Handle design tasks specifically
+    if (taskType === 'asset_creation' || taskType === 'design' || taskType === 'ui_design') {
+      return this.generateDesignSolution(analysis, issueData);
+    }
 
     // If specific files are mentioned, generate code for those files
     if (mentionedFiles.length > 0) {
@@ -113,31 +119,81 @@ class IntelligentCodeGenerator extends CodeGeneratorEngine {
   }
 
   /**
+   * Generate high-end design solution
+   */
+  generateDesignSolution(analysis, issueData) {
+    const { title, description } = issueData;
+    const { taskType } = analysis;
+
+    let category = 'generic';
+    if (description.toLowerCase().includes('logo')) category = 'logo';
+    else if (description.toLowerCase().includes('banner')) category = 'banner';
+    else if (description.toLowerCase().includes('web') || description.toLowerCase().includes('ui') || description.toLowerCase().includes('mockup')) category = 'web_design';
+    else if (description.toLowerCase().includes('social') || description.toLowerCase().includes('post') || description.toLowerCase().includes('instagram')) category = 'social_media_post';
+    else if (description.toLowerCase().includes('flyer')) category = 'flyer';
+    else if (description.toLowerCase().includes('business card')) category = 'business_card';
+    else if (description.toLowerCase().includes('email')) category = 'email';
+    else if (description.toLowerCase().includes('thumbnail')) category = 'thumbnail';
+
+    const colors = this.extractColorsFromDescription(description);
+    const requirements = {
+      title: title,
+      colors: colors,
+      style: 'premium'
+    };
+
+    let svg = '';
+    switch (category) {
+      case 'logo': svg = generateLogo(title, colors); break;
+      case 'banner': svg = generateBanner(title, colors); break;
+      case 'web_design': svg = generateWebMockup(title, colors); break;
+      case 'flyer': svg = generateFlyer(title, colors); break;
+      case 'social_media_post': svg = generateSocialPost(title, colors); break;
+      case 'email': svg = generateEmailTemplate(title, colors); break;
+      case 'business_card': svg = generateBusinessCard(title, colors); break;
+      case 'thumbnail': svg = generateThumbnail(title, colors); break;
+      default: svg = generateGenericDesign(title, colors);
+    }
+
+    const fileName = category === 'web_design' ? 'mockup.svg' : `${category}.svg`;
+
+    return [
+      {
+        filePath: fileName,
+        fileName: fileName,
+        code: svg,
+        language: 'svg'
+      },
+      this.generateAuditFile()
+    ];
+  }
+
+  /**
+   * Extract color preferences from text
+   */
+  extractColorsFromDescription(description) {
+    const hexRegex = /#([0-9A-Fa-f]{3,6})/g;
+    const matches = description.match(hexRegex);
+    if (matches && matches.length >= 2) return matches.slice(0, 3);
+
+    // Default premium palettes
+    const palettes = [
+      ['#4F46E5', '#EC4899', '#8B5CF6'], // Indigo-Pink-Violet
+      ['#0EA5E9', '#2DD4BF', '#10B981'], // Sky-Teal-Emerald
+      ['#F43F5E', '#FB923C', '#EAB308'], // Rose-Orange-Yellow
+      ['#020617', '#1E293B', '#334155'], // Slate (Dark Luxury)
+    ];
+
+    return palettes[Math.floor(Math.random() * palettes.length)];
+  }
+
+  /**
    * Generate asset (like pixel art) for tasks requiring images
    */
   generateAssetFix(filePath, analysis, issueData) {
-    // For now, since we're a text-based system, we'll generate a
-    // high-quality placeholder or a base64 encoded image that
-    // satisfies the requirement of "submitting a file"
-    console.log(`🎨 Generating asset placeholder for ${filePath}`);
-
-    return `// This is a placeholder for an original pixel art image: ${issueData.title}
-// In a production environment, this would be a real binary PNG file.
-// For the purpose of this automated submission, we've included the metadata
-// and the creative concept description.
-
-/**
- * Creative Concept:
- * ${analysis.suggestedApproach}
- */
-
-// Placeholder data representing a 64x64 pixel art
-const ASSET_METADATA = {
-  theme: "Retro Pixel Art",
-  subject: "${issueData.title}",
-  dimensions: "64x64",
-  format: "${filePath.split('.').pop()}"
-};`;
+    // For asset creation, we now use the advanced design generator
+    const designSolutions = this.generateDesignSolution(analysis, issueData);
+    return designSolutions[0].code;
   }
 
   /**
