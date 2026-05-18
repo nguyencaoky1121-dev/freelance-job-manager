@@ -120,6 +120,24 @@ class FeedbackTracker {
   }
 
   /**
+   * Detect new instructions/feedback from comments
+   */
+  detectNewInstructions(currentComments, lastCommentId) {
+    if (!currentComments || currentComments.length === 0) return null;
+    if (!lastCommentId) return null; // Only detect new if there was a previous comment to track from
+
+    let newComment = null;
+    // Find the first comment that is newer than the last tracked comment
+    for (let i = 0; i < currentComments.length; i++) {
+      if (currentComments[i].id > lastCommentId) {
+        newComment = currentComments[i];
+        break;
+      }
+    }
+    return newComment;
+  }
+
+  /**
    * Generate response to feedback
    */
   generateResponse(feedback) {

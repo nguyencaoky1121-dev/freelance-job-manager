@@ -14,6 +14,46 @@ class SmartAutoWorkPipeline {
     this.feedbackTracker = new FeedbackTracker();
     this.isProcessing = false;
     this.activeJobs = new Map();
+
+    // Multi-Agent Role Configuration
+    this.agents = {
+      SCANNER: { model: 'haiku', role: 'Scanning and filtering bounties' },
+      STRATEGIST: { model: 'opus', role: 'Deep analysis and task decomposition' },
+      WORKER: { model: 'sonnet', role: 'Expert code and design implementation' },
+      REVIEWER: { model: 'sonnet', role: 'QA, testing, and professional reporting' },
+      CONTROLLER: { model: 'haiku', role: 'Persistence, feedback loop, and monitoring' }
+    };
+  }
+
+  /**
+   * RECURSIVE AUTONOMOUS LOOP: The heart of the system
+   * This method ensures work continues until payment or rejection
+   */
+  async autonomousLoop(bountyId) {
+    try {
+      const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
+      if (!bounty || ['PAID', 'REJECTED'].includes(bounty.status)) return;
+
+      console.log(`\n🔄 [LOOP] Processing bounty: ${bounty.title} (Status: ${bounty.status})`);
+
+      // Check for new comments (Feedback Agent)
+      const commentsResult = await this.githubAPI.getIssueComments(bounty.github_owner, bounty.github_repo, bounty.github_issue_number);
+      const newFeedback = this.feedbackTracker.detectNewInstructions(commentsResult.comments);
+
+      if (newFeedback) {
+        console.log(`\n💡 New feedback detected! Re-triggering Strategist Agent...`);
+        await run('UPDATE jobs SET status = "RE_ANALYZING" WHERE id = ?', [bountyId]);
+        return this.processSingleBounty(bounty, true); // Re-process with feedback
+      }
+
+      // If PR is open but no feedback, just wait and poll
+      if (bounty.status === 'SUBMITTED') {
+        console.log(`⌛ PR submitted. Waiting for maintainer review...`);
+        return;
+      }
+    } catch (err) {
+      console.error(`❌ Loop Error:`, err.message);
+    }
   }
 
   /**
@@ -419,21 +459,51 @@ Changes implemented and tested locally. All acceptance criteria addressed.
   /**
    * Process a single bounty through the complete pipeline
    */
-  async processSingleBounty(bounty) {
+      const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
+      if (!bounty || ['PAID', 'REJECTED'].includes(bounty.status)) return;
+
+      console.log(`\n🔄 [LOOP] Processing bounty: ${bounty.title} (Status: ${bounty.status})`);
+
+      // Check for new comments (Feedback Agent)
+      const commentsResult = await this.githubAPI.getIssueComments(bounty.github_owner, bounty.github_repo, bounty.github_issue_number);
+      const newFeedback = this.feedbackTracker.detectNewInstructions(commentsResult.comments, bounty.analysis.last_comment_id);
+
+      if (newFeedback) {
+        console.log(`\n💡 New feedback detected! Re-triggering Strategist Agent...`);
+        await run('UPDATE jobs SET status = "RE_ANALYZING", analysis = JSON_SET(analysis, '$.last_comment_id', ?) WHERE id = ?', [newFeedback.id, bountyId]);
+        return this.processSingleBounty(bounty, true, newFeedback); // Re-process with feedback
+      }
+
+      // If PR is open but no feedback, just wait and poll
+      if (bounty.status === 'SUBMITTED') {
+        console.log(`⌛ PR submitted. Waiting for maintainer review...`);
+        return;
+      }
+    } catch (err) {
+      console.error(`❌ Loop Error:`, err.message);
+    }
+  }
+
+  /**
+   * Process a single bounty through the complete pipeline (Multi-Agent Orchestration)
+   */
+  async processSingleBounty(bounty, reAnalyzing = false, feedback = null) {
     try {
       console.log(`\n${'='.repeat(60)}`);
       console.log(`🎯 PROCESSING BOUNTY: ${bounty.title}`);
       console.log(`${'='.repeat(60)}`);
 
-      // PHASE 0: Validate
-      const validation = await this.validateBounty(bounty);
-      if (!validation.valid) {
-        console.log(`⏭️ Skipping: ${validation.reason}`);
-        await run(
-          'UPDATE jobs SET status = ? WHERE id = ?',
-          ['SKIPPED', bounty.id]
-        );
-        return { bountyId: bounty.id, status: 'skipped', reason: validation.reason };
+      // Agent 1: Job Scanner & Validator (Haiku)
+      if (!reAnalyzing) {
+        const validation = await this.validateBounty(bounty);
+        if (!validation.valid) {
+          console.log(`⏭️ Skipping: ${validation.reason}`);
+          await run(
+            'UPDATE jobs SET status = ? WHERE id = ?',
+            ['SKIPPED', bounty.id]
+          );
+          return { bountyId: bounty.id, status: 'skipped', reason: validation.reason };
+        }
       }
 
       // Get issue comments for deep analysis
@@ -442,8 +512,8 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       const repo = urlParts[4];
       const issueNumber = urlParts[6];
 
-      const commentsResult = await this.githubAPI.getIssueComments(owner, repo, issueNumber);
-      const issueComments = commentsResult.success ? commentsResult.comments : [];
+      const currentCommentsResult = await this.githubAPI.getIssueComments(owner, repo, issueNumber);
+      const issueComments = currentCommentsResult.success ? currentCommentsResult.comments : [];
 
       // Check bounty status (solved, competition level)
       const bountyStatus = await this.githubAPI.checkBountyStatus(owner, repo, issueNumber);
@@ -465,7 +535,8 @@ Changes implemented and tested locally. All acceptance criteria addressed.
         return { bountyId: bounty.id, status: 'skipped', reason: 'Too much competition' };
       }
 
-      // PHASE 1: Deep Analyze
+      // Agent 2: Strategic Requirement Analyzer (Opus)
+      console.log(`\n📊 [STRATEGIST Agent] Deep analyzing bounty: ${bounty.title}`);
       const analysis = await this.deepAnalyze(bounty, issueComments);
       if (!analysis || !analysis.isRealTask) {
         console.log(`⏭️ Not a real task or too vague`);
@@ -476,30 +547,32 @@ Changes implemented and tested locally. All acceptance criteria addressed.
         return { bountyId: bounty.id, status: 'skipped', reason: 'Not a real task' };
       }
 
-      // PHASE 1: Send /attempt command
+      // Agent 5 (Controller): Send /attempt command
       const attemptResult = await this.sendAttemptCommand(bounty, analysis);
       if (!attemptResult.success) {
         return { bountyId: bounty.id, status: 'failed', error: attemptResult.error };
       }
 
-      // Update job status to IN_PROGRESS after successful attempt
       await run(
-        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP WHERE id = ?',
-        ['IN_PROGRESS', bounty.id]
+        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, analysis = JSON_SET(analysis, '$.last_comment_id', ?) WHERE id = ?',
+        ['IN_PROGRESS', attemptResult.comment.id, bounty.id]
       );
-      // PHASE 1: Generate
+
+      // Agent 3: Expert Worker Pool (Sonnet) - Implement real logic
+      console.log(`\n💻 [WORKER Agent] Generating core implementation...`);
       const solutionResult = await this.generateRealSolution(bounty, analysis);
       if (!solutionResult.success) {
         return { bountyId: bounty.id, status: 'failed', error: solutionResult.error };
       }
 
-      // PHASE 1: Execute
+      // Agent 4: Quality Reviewer & Reporter (Sonnet) - Review, test, and write report
+      console.log(`\n🧪 [REVIEWER Agent] Verifying solution and generating PR report...`);
       const workResult = await this.executeWork(bounty, solutionResult.solutions, analysis);
       if (!workResult.success) {
         return { bountyId: bounty.id, status: 'failed', error: workResult.error };
       }
 
-      // PHASE 2: Start Feedback Tracking (only if real PR)
+      // Agent 5: Controller Agent - Final Submission and Persistence Tracker
       if (!workResult.simulated) {
         await this.startFeedbackTracking(
           bounty,
@@ -508,20 +581,16 @@ Changes implemented and tested locally. All acceptance criteria addressed.
           workResult.repo,
           issueNumber
         );
-      } else {
-        console.log(`\n⏭️ Skipped feedback tracking (PR is simulated)`);
       }
 
-      // Update database
+      // Update database status
       await run(
         'UPDATE jobs SET solution = ?, auto_execute = ?, status = ? WHERE id = ?',
         [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), analysis.shouldAutoExecute ? 1 : 0, 'SUBMITTED', bounty.id]
       );
 
-      console.log(`\n✅ BOUNTY PROCESSING COMPLETE`);
-      console.log(`   PR: ${workResult.prUrl}`);
-      console.log(`   Status: Waiting for review/merge`);
-      console.log(`   Auto-Execute: ${analysis.shouldAutoExecute ? 'YES' : 'NO'}`);
+      console.log(`\n✅ MULTI-AGENT PIPELINE COMPLETE`);
+      console.log(`   Status: Loop Active (Waiting for Feedback)`);
 
       return {
         bountyId: bounty.id,
