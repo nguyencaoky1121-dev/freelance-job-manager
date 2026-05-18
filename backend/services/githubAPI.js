@@ -561,6 +561,58 @@ class GitHubAPI {
         error: error.message,
       };
     }
+  /**
+   * Check if a bounty issue is already solved or has winners
+   */
+  async checkBountyStatus(owner, repo, issueNumber) {
+    try {
+      if (!this.token) {
+        return { solved: false, competitionLevel: 0, canAttempt: true };
+      }
+
+      const response = await axios.get(
+        `${GITHUB_API_BASE}/repos/${owner}/${repo}/issues/${issueNumber}/comments`,
+        {
+          headers: {
+            'Authorization': `token ${this.token}`,
+            'Accept': 'application/vnd.github.v3+json',
+          },
+          timeout: 10000,
+        }
+      );
+
+      const comments = response.data || [];
+
+      // Look for Algora bot or similar rewarding comments
+      const hasWinner = comments.some(comment => {
+        const username = comment.user?.login || '';
+        const body = comment.body || '';
+
+        return (username.includes('algora') || username.includes('bot')) &&
+               (body.includes('Rewarded') || body.includes('claimed') || body.includes('Reward'));
+      });
+
+      // Check for /attempt commands to see competition level
+      const attempts = comments.filter(c => (c.body || '').toLowerCase().includes('/attempt')).length;
+
+      return {
+        solved: hasWinner,
+        competitionLevel: attempts,
+        canAttempt: !hasWinner && attempts < 5 // Avoid highly contested ones if too many attempts
+      };
+    } catch (err) {
+      console.error(`❌ Error checking bounty status for ${owner}/${repo}#${issueNumber}: ${err.message}`);
+      // Default to allowing attempt if check fails, but log it
+      return { solved: false, competitionLevel: 0, canAttempt: true, error: err.message };
+    }
+  }
+
+  /**
+   * Send /attempt command to register for a bounty
+   */
+  async attemptBounty(owner, repo, issueNumber, plan = '') {
+    const comment = `/attempt #${issueNumber}\n\n**Implementation Plan:**\n${plan || 'Analyzing requirements and implementing a clean solution according to acceptance criteria.'}`;
+    return await this.postComment(owner, repo, issueNumber, comment);
   }
 }
 

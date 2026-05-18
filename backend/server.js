@@ -18,6 +18,7 @@ const autoworkRoutes = require('./routes/autowork');
 const autodebugRoutes = require('./routes/autodebug');
 const { JobScanner } = require('./services/jobScanner');
 const { JobMonitor } = require('./services/jobMonitor');
+const { ScannerManager } = require('./services/scannerManager');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -97,8 +98,9 @@ async function start() {
     });
 
     // Start job scanner (auto-scan)
-    const scanner = new JobScanner();
+    const scannerManager = new ScannerManager();
     const scanInterval = parseInt(process.env.SCAN_INTERVAL) || 60000;
+    scannerManager.startScanning(scanInterval);
     console.log(`🔍 Job scanner will run every ${scanInterval / 1000}s`);
 
     // Start job monitor (auto-check for messages and awards)
