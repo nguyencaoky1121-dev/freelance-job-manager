@@ -41,6 +41,8 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
       workCategory: this.determineWorkCategory(budget, taskClarity.score, baseAnalysis.taskType),
       isRealTask: taskClarity.score >= 0.6 && budget > 0,
       shouldAutoExecute: budget > 0 && budget < 50 && taskClarity.score >= 0.6,
+      // NEW: Override suggestedApproach with deep analysis data
+      suggestedApproach: this.suggestApproach(description, acceptanceCriteria, mentionedFiles),
     };
   }
 

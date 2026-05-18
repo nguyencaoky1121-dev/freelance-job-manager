@@ -83,7 +83,7 @@ class SmartRequirementAnalyzer {
       acceptanceCriteria: this.extractCriteria(description),
       filesThatNeedChanges: this.predictFiles(text),
       testingStrategy: this.suggestTesting(text),
-      suggestedApproach: this.suggestApproach(text),
+      suggestedApproach: this.suggestApproach(text, this.extractCriteria(description), this.predictFiles(text)),
       confidence: this.calculateConfidence(text),
     };
   }
@@ -233,9 +233,38 @@ class SmartRequirementAnalyzer {
     return 'Write unit tests covering all functions and edge cases. Aim for 80%+ coverage.';
   }
 
-  suggestApproach(text) {
+  suggestApproach(text, criteria = [], files = []) {
     const steps = [];
 
+    // If we have specific criteria or files, use them to build a dynamic plan
+    if (criteria.length > 0 || files.length > 0) {
+      steps.push('1. 🔍 Comprehensive Requirement Analysis');
+      steps.push(`   - Analyze core objective: ${text.substring(0, 50)}...`);
+
+      if (files.length > 0) {
+        steps.push('2. 🛠️ Environment & Architecture Setup');
+        steps.push(`   - Prepare target files: ${files.slice(0, 3).join(', ')}`);
+      } else {
+        steps.push('2. 🏗️ Structural Design & Scaffolding');
+      }
+
+      steps.push('3. 💻 Core Implementation Phase');
+      criteria.slice(0, 3).forEach((c, i) => {
+        steps.push(`   - Address key requirement: ${c.substring(0, 60)}${c.length > 60 ? '...' : ''}`);
+      });
+
+      steps.push('4. 🧪 Rigorous Testing & QA');
+      steps.push('   - Verify all acceptance criteria against implementation');
+      steps.push('   - Perform regression testing to ensure stability');
+
+      steps.push('5. 🚀 Final Optimization & Submission');
+      steps.push('   - Code cleanup and performance tuning');
+      steps.push('   - Submit detailed PR with implementation evidence');
+
+      return steps.join('\n');
+    }
+
+    // Fallback to patterns if no specific data
     if (text.includes('bug')) {
       steps.push('1. Reproduce the bug with a test case');
       steps.push('2. Identify root cause');

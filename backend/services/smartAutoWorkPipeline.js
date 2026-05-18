@@ -373,6 +373,38 @@ Changes implemented and tested locally. All acceptance criteria addressed.
   }
 
   /**
+   * PHASE 1: Send /attempt command
+   */
+  async sendAttemptCommand(bounty, analysis) {
+    try {
+      const urlParts = bounty.project_url.split('/');
+      const owner = urlParts[3];
+      const repo = urlParts[4];
+      const issueNumber = urlParts[6];
+
+      console.log(`📝 Sending /attempt command for ${bounty.title}`);
+
+      let planHeader = `🚀 **Strategy & Implementation Plan**\n\n`;
+      if (analysis.workCategory === 'STRATEGIC') {
+        planHeader = `🏆 **Strategic Implementation Roadmap**\n*Leveraging advanced design principles and production-grade engineering.*\n\n`;
+      } else if (analysis.workCategory === 'BRAND') {
+        planHeader = `🤝 **Contribution Strategy**\n*Focusing on high-quality integration and community alignment.*\n\n`;
+      }
+
+      const attemptComment = `/attempt #${issueNumber}\n\n` +
+        `${planHeader}` +
+        `${analysis.suggestedApproach}\n\n` +
+        `**Commitment:** I will deliver a high-quality solution addressing all criteria precisely. Starting now.`;
+
+      const attemptResult = await this.githubAPI.postComment(owner, repo, issueNumber, attemptComment);
+      return attemptResult;
+    } catch (err) {
+      console.error('❌ Error sending attempt command:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
    * Process a single bounty through the complete pipeline
    */
   async processSingleBounty(bounty) {
@@ -433,8 +465,7 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       }
 
       // PHASE 1: Send /attempt command
-      console.log(`📝 Sending /attempt command for ${bounty.title}`);
-      const attemptResult = await this.githubAPI.attemptBounty(owner, repo, issueNumber, analysis.suggestedApproach);
+      const attemptResult = await this.sendAttemptCommand(bounty, analysis);
       if (!attemptResult.success) {
         return { bountyId: bounty.id, status: 'failed', error: attemptResult.error };
       }
