@@ -119,6 +119,20 @@ async function initDB() {
     FOREIGN KEY (job_id) REFERENCES jobs(id)
   )`);
 
+  await run(`CREATE TABLE IF NOT EXISTS debug_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cycle INTEGER NOT NULL,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    errors_found INTEGER DEFAULT 0,
+    fixes_applied INTEGER DEFAULT 0,
+    tests_passed INTEGER DEFAULT 0,
+    tests_failed INTEGER DEFAULT 0,
+    errors_remaining INTEGER DEFAULT 0,
+    success BOOLEAN DEFAULT 0,
+    details TEXT DEFAULT '{}',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   // Create indexes
   await run('CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status)');
   await run('CREATE INDEX IF NOT EXISTS idx_jobs_platform ON jobs(platform)');
@@ -126,6 +140,7 @@ async function initDB() {
   await run('CREATE INDEX IF NOT EXISTS idx_messages_status ON messages(reply_status)');
   await run('CREATE INDEX IF NOT EXISTS idx_payment_job ON payment_history(job_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_payment_status ON payment_history(payment_status)');
+  await run('CREATE INDEX IF NOT EXISTS idx_debug_cycle ON debug_history(cycle)');
 }
 
 module.exports = { initDB, run, all, get, getDB };

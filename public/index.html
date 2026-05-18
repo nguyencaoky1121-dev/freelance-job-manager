@@ -959,6 +959,37 @@
       </div>
     </div>
 
+    <!-- AUTO DEBUG PANEL -->
+    <div class="bottom-panel" style="grid-column: 1 / -1; background: linear-gradient(135deg, #1e3a5f 0%, #0d1f3c 100%); border: none; box-shadow: 0 8px 32px rgba(30, 58, 95, 0.4); display: none;" id="autoDebugPanel">
+      <div class="bottom-panel-header" style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+        <div class="title-group">
+          <h3 style="color: white; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 24px;">🔧</span>
+            <span>Auto-Debug Hệ Thống</span>
+            <span class="count-badge" id="autoDebugBadge" style="display:none; background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">OFF</span>
+          </h3>
+          <p style="color: rgba(255,255,255,0.8); font-size: 13px; margin-top: 4px;">Tự động phát hiện và sửa lỗi từ Railway logs</p>
+        </div>
+        <div class="actions">
+          <button class="btn-sm" onclick="startAutoDebug()" id="btnStartAutoDebug" style="background: #10b981; color: white; font-weight: 600; border: none; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
+            ▶️ Bật
+          </button>
+          <button class="btn-sm" onclick="stopAutoDebug()" id="btnStopAutoDebug" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3); display: none;">
+            ⏹️ Dừng
+          </button>
+          <button class="btn-sm" onclick="triggerAutoDebug()" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25);">
+            ⚡ Trigger Ngay
+          </button>
+          <button class="btn-sm" onclick="analyzeLogsNow()" style="background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.25);">
+            🔍 Phân Tích Logs
+          </button>
+        </div>
+      </div>
+      <div id="autoDebugContent" style="padding: 20px;">
+        <div class="card-empty" style="color: rgba(255,255,255,0.9);"><span class="spinner"></span> Đang tải...</div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -1049,6 +1080,16 @@
       } else if (data.type === 'PR_REJECTED') {
         showNotif(`❌ PR bị từ chối: ${data.repo}#${data.prNumber}`, 'warning');
         loadFeedbackTracking();
+      } else if (data.type === 'AUTO_DEBUG_UPDATE') {
+        const d = data.cycleResult;
+        showNotif(`🔧 Debug Cycle: ${d.errorsFound} lỗi, ${d.fixesApplied} sửa, ${d.errorsRemaining} còn lại`, d.success ? 'success' : 'warning');
+        loadAutoDebugStatus();
+      } else if (data.type === 'AUTO_DEBUG_STARTED') {
+        showNotif(`🔧 Auto-Debug đã bắt đầu (max ${data.maxCycles} cycles)`, 'info');
+        loadAutoDebugStatus();
+      } else if (data.type === 'AUTO_DEBUG_STOPPED') {
+        showNotif(`🛑 Auto-Debug đã dừng: ${data.errorsFixed} lỗi đã sửa`, 'success');
+        loadAutoDebugStatus();
       }
     }
 
@@ -1903,6 +1944,150 @@
           }
           loadAutoworkStatus();
           loadAutoworkHistory();
+        } else {
+          showNotif(`Lỗi: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        showNotif(`Lỗi: ${err.message}`, 'error');
+      }
+    }
+
+    // --- AUTO DEBUG FUNCTIONS ---
+    async function loadAutoDebugStatus() {
+      try {
+        const res = await fetch(`${API_BASE}/autodebug/status`);
+        const data = await res.json();
+
+        const badge = document.getElementById('autoDebugBadge');
+        const btnStart = document.getElementById('btnStartAutoDebug');
+        const btnStop = document.getElementById('btnStopAutoDebug');
+        const el = document.getElementById('autoDebugContent');
+
+        if (!data.success) {
+          el.innerHTML = `<div style="color: rgba(255,255,255,0.7); text-align:center; padding:20px;">Lỗi: ${data.error}</div>`;
+          return;
+        }
+
+        if (data.running) {
+          badge.textContent = 'ON';
+          badge.style.background = 'rgba(16, 185, 129, 0.5)';
+          badge.style.borderColor = '#10b981';
+          badge.style.display = 'inline-block';
+          btnStart.style.display = 'none';
+          btnStop.style.display = 'inline-block';
+        } else {
+          badge.textContent = 'OFF';
+          badge.style.background = 'rgba(255, 255, 255, 0.2)';
+          badge.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+          badge.style.display = 'inline-block';
+          btnStart.style.display = 'inline-block';
+          btnStop.style.display = 'none';
+        }
+
+        let html = `
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 20px;">
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: white;">${data.status.cycles}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">🔄 Cycles Đã Chạy</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: #ef4444;">${data.status.errorsDetected}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">⚠️ Lỗi Đã Phát Hiện</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: #10b981;">${data.status.errorsFixed}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">✅ Lỗi Đã Tự Sửa</div>
+            </div>
+            <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 12px; padding: 16px; text-align: center; border: 1px solid rgba(255,255,255,0.2);">
+              <div style="font-size: 28px; font-weight: 700; color: #f59e0b;">${data.pendingFixes}</div>
+              <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 4px;">⏳ Đang Chờ Xử Lý</div>
+            </div>
+          </div>
+        `;
+
+        if (!data.railwayConfigured) {
+          html += `
+            <div style="background: rgba(239, 68, 68, 0.2); border-left: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: white;">
+              <strong>⚠️ Chưa cấu hình Railway API:</strong> Hệ thống đang sử dụng dữ liệu mẫu (mock logs).
+              <br>Hãy thêm RAILWAY_API_TOKEN và RAILWAY_PROJECT_ID vào file .env
+            </div>
+          `;
+        }
+
+        el.innerHTML = html;
+        document.getElementById('autoDebugPanel').style.display = 'block';
+
+      } catch (err) {
+        console.error('Error loading auto-debug status:', err);
+      }
+    }
+
+    async function startAutoDebug() {
+      try {
+        showNotif('Đang khởi động Auto-Debug...', 'info');
+        const res = await fetch(`${API_BASE}/autodebug/start`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ maxCycles: 5, autoFix: true })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showNotif('🔧 Đã bật Auto-Debug', 'success');
+          loadAutoDebugStatus();
+        } else {
+          showNotif(`Lỗi: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        showNotif(`Lỗi: ${err.message}`, 'error');
+      }
+    }
+
+    async function stopAutoDebug() {
+      try {
+        const res = await fetch(`${API_BASE}/autodebug/stop`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          showNotif('🛑 Đã tắt Auto-Debug', 'success');
+          loadAutoDebugStatus();
+        } else {
+          showNotif(`Lỗi: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        showNotif(`Lỗi: ${err.message}`, 'error');
+      }
+    }
+
+    async function triggerAutoDebug() {
+      try {
+        showNotif('⚡ Đang thực thi một chu kỳ Debug...', 'info');
+        const res = await fetch(`${API_BASE}/autodebug/trigger`, { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          showNotif('✅ Đã chạy xong Debug cycle', 'success');
+          loadAutoDebugStatus();
+        } else {
+          showNotif(`Lỗi: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        showNotif(`Lỗi: ${err.message}`, 'error');
+      }
+    }
+
+    async function analyzeLogsNow() {
+      try {
+        showNotif('🔍 Đang phân tích logs...', 'info');
+        const res = await fetch(`${API_BASE}/autodebug/analyze-logs`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showNotif(`📊 Tìm thấy ${data.summary.totalErrors} lỗi và ${data.summary.totalWarnings} cảnh báo`, 'success');
         } else {
           showNotif(`Lỗi: ${data.error}`, 'error');
         }
