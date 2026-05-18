@@ -124,7 +124,13 @@ class FeedbackTracker {
    */
   detectNewInstructions(currentComments, lastCommentId) {
     if (!currentComments || currentComments.length === 0) return null;
-    if (!lastCommentId) return null; // Only detect new if there was a previous comment to track from
+    if (!lastCommentId) {
+      // If no lastCommentId is tracked, consider the latest external comment as the new instruction point
+      const lastExternalComment = currentComments
+        .filter(c => c.user?.login !== (process.env.GITHUB_USERNAME || ''))
+        .sort((a, b) => b.id - a.id)[0];
+      return lastExternalComment || null;
+    }
 
     let newComment = null;
     // Find the first comment that is newer than the last tracked comment

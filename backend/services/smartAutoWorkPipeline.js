@@ -34,16 +34,27 @@ class SmartAutoWorkPipeline {
       const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
       if (!bounty || ['PAID', 'REJECTED'].includes(bounty.status)) return;
 
+      const analysis = bounty.analysis ? JSON.parse(bounty.analysis) : {};
+      const lastCommentId = analysis.last_comment_id || null;
+
       console.log(`\n🔄 [LOOP] Processing bounty: ${bounty.title} (Status: ${bounty.status})`);
 
       // Check for new comments (Feedback Agent)
       const commentsResult = await this.githubAPI.getIssueComments(bounty.github_owner, bounty.github_repo, bounty.github_issue_number);
-      const newFeedback = this.feedbackTracker.detectNewInstructions(commentsResult.comments);
+      if (!commentsResult.success) return;
+
+      const newFeedback = this.feedbackTracker.detectNewInstructions(commentsResult.comments, lastCommentId);
 
       if (newFeedback) {
         console.log(`\n💡 New feedback detected! Re-triggering Strategist Agent...`);
-        await run('UPDATE jobs SET status = "RE_ANALYZING" WHERE id = ?', [bountyId]);
-        return this.processSingleBounty(bounty, true); // Re-process with feedback
+
+        // Update last_comment_id in database
+        const updatedAnalysis = { ...analysis, last_comment_id: newFeedback.id };
+        await run('UPDATE jobs SET status = "RE_ANALYZING", analysis = ? WHERE id = ?', [JSON.stringify(updatedAnalysis), bountyId]);
+
+        // Refresh bounty data and re-process
+        const refreshedBounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
+        return this.processSingleBounty(refreshedBounty, true, newFeedback);
       }
 
       // If PR is open but no feedback, just wait and poll
@@ -457,40 +468,15 @@ Changes implemented and tested locally. All acceptance criteria addressed.
   }
 
   /**
-   * Process a single bounty through the complete pipeline
-   */
-      const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
-      if (!bounty || ['PAID', 'REJECTED'].includes(bounty.status)) return;
-
-      console.log(`\n🔄 [LOOP] Processing bounty: ${bounty.title} (Status: ${bounty.status})`);
-
-      // Check for new comments (Feedback Agent)
-      const commentsResult = await this.githubAPI.getIssueComments(bounty.github_owner, bounty.github_repo, bounty.github_issue_number);
-      const newFeedback = this.feedbackTracker.detectNewInstructions(commentsResult.comments, bounty.analysis.last_comment_id);
-
-      if (newFeedback) {
-        console.log(`\n💡 New feedback detected! Re-triggering Strategist Agent...`);
-        await run('UPDATE jobs SET status = "RE_ANALYZING", analysis = JSON_SET(analysis, '$.last_comment_id', ?) WHERE id = ?', [newFeedback.id, bountyId]);
-        return this.processSingleBounty(bounty, true, newFeedback); // Re-process with feedback
-      }
-
-      // If PR is open but no feedback, just wait and poll
-      if (bounty.status === 'SUBMITTED') {
-        console.log(`⌛ PR submitted. Waiting for maintainer review...`);
-        return;
-      }
-    } catch (err) {
-      console.error(`❌ Loop Error:`, err.message);
-    }
-  }
-
-  /**
    * Process a single bounty through the complete pipeline (Multi-Agent Orchestration)
    */
   async processSingleBounty(bounty, reAnalyzing = false, feedback = null) {
     try {
       console.log(`\n${'='.repeat(60)}`);
-      console.log(`🎯 PROCESSING BOUNTY: ${bounty.title}`);
+      console.log(`🎯 PROCESSING BOUNTY: ${bounty.title}${reAnalyzing ? ' (RE-ANALYZING WITH FEEDBACK)' : ''}`);
+      if (feedback) {
+        console.log(`💬 Feedback from ${feedback.user?.login}: ${feedback.body}`);
+      }
       console.log(`${'='.repeat(60)}`);
 
       // Agent 1: Job Scanner & Validator (Haiku)
@@ -553,9 +539,11 @@ Changes implemented and tested locally. All acceptance criteria addressed.
         return { bountyId: bounty.id, status: 'failed', error: attemptResult.error };
       }
 
+      analysis.last_comment_id = attemptResult.comment.id;
+
       await run(
-        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, analysis = JSON_SET(analysis, '$.last_comment_id', ?) WHERE id = ?',
-        ['IN_PROGRESS', attemptResult.comment.id, bounty.id]
+        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, analysis = ? WHERE id = ?',
+        ['IN_PROGRESS', JSON.stringify(analysis), bounty.id]
       );
 
       // Agent 3: Expert Worker Pool (Sonnet) - Implement real logic
