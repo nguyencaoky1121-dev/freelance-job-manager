@@ -597,10 +597,14 @@ class GitHubAPI {
       // Check for /attempt commands to see competition level
       const attempts = comments.filter(c => (c.body || '').toLowerCase().includes('/attempt')).length;
 
+      // Adjust competition tolerance based on bounty amount (heuristic)
+      // For higher bounties, we're willing to compete more
+      const maxAttempts = 15; // Increased from 5 to 15 to be more aggressive
+
       return {
         solved: hasWinner,
         competitionLevel: attempts,
-        canAttempt: !hasWinner && attempts < 5 // Avoid highly contested ones if too many attempts
+        canAttempt: !hasWinner && attempts < maxAttempts
       };
     } catch (err) {
       console.error(`❌ Error checking bounty status for ${owner}/${repo}#${issueNumber}: ${err.message}`);

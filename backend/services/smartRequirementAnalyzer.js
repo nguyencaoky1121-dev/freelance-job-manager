@@ -23,6 +23,10 @@ class SmartRequirementAnalyzer {
         keywords: ['test', 'unit test', 'integration test', 'e2e', 'coverage'],
         difficulty: 'medium',
       },
+      'asset_creation': {
+        keywords: ['pixel art', 'image', 'design', 'graphic', 'art', 'create asset', 'generate image'],
+        difficulty: 'easy',
+      },
     };
 
     this.techStack = {
