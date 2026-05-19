@@ -342,28 +342,21 @@ class WorkExecutor {
         };
       }
 
-      // If PR creation fails, still return success with a simulated PR
+      // If PR creation fails, return failure with the error message
       console.warn(`⚠️ PR creation via API failed: ${response.error}`);
 
       return {
-        success: false, // Force failure for real GitHub PRs
+        success: false,
         error: response.error,
-        simulated: true,
         message: 'PR creation failed',
       };
     } catch (err) {
       console.error('❌ Error creating PR:', err.message);
 
-      // Even on error, return a simulated PR so workflow can continue
-      const simulatedPRNumber = Math.floor(Math.random() * 10000) + 1000;
-      const simulatedPRUrl = `https://github.com/${owner}/${repo}/pull/${simulatedPRNumber}`;
-
       return {
-        success: true,
-        prUrl: simulatedPRUrl,
-        prNumber: simulatedPRNumber,
-        simulated: true,
-        message: 'PR created (simulated - error occurred)',
+        success: false,
+        error: err.message,
+        message: 'PR creation failed due to exception',
       };
     }
   }

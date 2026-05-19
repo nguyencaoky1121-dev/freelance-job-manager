@@ -273,23 +273,19 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
     const fullText = `${title} ${description}`.toLowerCase();
 
     // Exclude personal info requests
-    if (fullText.includes('personal') || fullText.includes('private') || fullText.includes('secret')) {
+    if (fullText.includes('personal') || fullText.includes('private') || (fullText.includes('secret') && !fullText.includes('secret network') && !fullText.includes('secret management'))) {
       return { excluded: true, reason: 'Personal information request' };
     }
 
-    // Exclude .env requests
-    if (fullText.includes('.env') || fullText.includes('environment variable')) {
+    // Exclude .env requests ONLY if it asks for the content or to commit it
+    if ((fullText.includes('.env') || fullText.includes('environment variable')) && (fullText.includes('provide') || fullText.includes('show') || fullText.includes('give') || fullText.includes('upload'))) {
       return { excluded: true, reason: '.env file request' };
     }
 
-    // Exclude API key requests
-    if (fullText.includes('api key') || fullText.includes('api_key') || fullText.includes('token')) {
+    // Exclude API key requests ONLY if it asks to provide one
+    if ((fullText.includes('api key') || fullText.includes('api_key') || fullText.includes('token')) && (fullText.includes('provide') || fullText.includes('show') || fullText.includes('give') || fullText.includes('upload'))) {
       return { excluded: true, reason: 'API key request' };
     }
-
-    // Exclude requests without budget
-    // Note: Budget validation is now handled primarily in the orchestrator (SmartAutoWorkPipeline)
-    // to allow for platform-specific logic (e.g. GitHub bounties with implicit rewards)
 
     return { excluded: false };
   }

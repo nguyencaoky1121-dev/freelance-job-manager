@@ -603,14 +603,56 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       console.log(`\n💻 [WORKER Agent] Generating core implementation...`);
       const solutionResult = await this.generateRealSolution(bounty, analysis);
       if (!solutionResult.success) {
-        return { bountyId: bounty.id, status: 'failed', error: solutionResult.error };
+        const errorMsg = solutionResult.error || 'Template generation failure';
+        console.log(`❌ MULTI-AGENT PIPELINE FAILED at generation stage: ${errorMsg}`);
+
+        if (bounty.platform === 'github' && !reAnalyzing) {
+          const urlParts = bounty.project_url.split('/');
+          const owner = urlParts[3];
+          const repo = urlParts[4];
+          const issueNumber = urlParts[6];
+
+          await this.githubAPI.postComment(
+            owner,
+            repo,
+            issueNumber,
+            `⚠️ **Technical Update:** I encountered an issue while generating the solution code.\n\n` +
+            `**Error Detail:** \`${errorMsg}\`\n\n` +
+            `I will attempt to refine my approach and retry shortly.`
+          );
+        }
+
+        await run('UPDATE jobs SET status = ? WHERE id = ?', ['FAILED', bounty.id]);
+        return { bountyId: bounty.id, status: 'failed', error: errorMsg };
       }
 
       // Agent 4: Quality Reviewer & Reporter (Sonnet) - Review, test, and write report
       console.log(`\n🧪 [REVIEWER Agent] Verifying solution and generating PR report...`);
       const workResult = await this.executeWork(bounty, solutionResult.solutions, analysis);
+
       if (!workResult.success) {
-        return { bountyId: bounty.id, status: 'failed', error: workResult.error };
+        const errorMsg = workResult.error || 'Unknown execution error';
+        console.log(`❌ MULTI-AGENT PIPELINE FAILED at execution stage: ${errorMsg}`);
+
+        // Post error feedback to GitHub if it's a real bounty
+        if (bounty.platform === 'github' && !reAnalyzing) {
+          const urlParts = bounty.project_url.split('/');
+          const owner = urlParts[3];
+          const repo = urlParts[4];
+          const issueNumber = urlParts[6];
+
+          await this.githubAPI.postComment(
+            owner,
+            repo,
+            issueNumber,
+            `⚠️ **Technical Update:** I encountered an issue during the final execution stage (Git push or PR creation).\n\n` +
+            `**Error Detail:** \`${errorMsg}\`\n\n` +
+            `I've logged this internally and will retry after automated system adjustments.`
+          );
+        }
+
+        await run('UPDATE jobs SET status = ? WHERE id = ?', ['FAILED', bounty.id]);
+        return { bountyId: bounty.id, status: 'failed', error: errorMsg };
       }
 
       // Agent 5: Controller Agent - Final Submission and Persistence Tracker
