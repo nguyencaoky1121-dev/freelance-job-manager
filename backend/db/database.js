@@ -75,7 +75,8 @@ async function initDB() {
     submitted_at DATETIME,
     completed_at DATETIME,
     paid_at DATETIME,
-    earnings REAL DEFAULT 0
+    earnings REAL DEFAULT 0,
+    logs TEXT DEFAULT ''
   )`);
 
   await run(`CREATE TABLE IF NOT EXISTS messages (
@@ -141,6 +142,13 @@ async function initDB() {
   await run('CREATE INDEX IF NOT EXISTS idx_payment_job ON payment_history(job_id)');
   await run('CREATE INDEX IF NOT EXISTS idx_payment_status ON payment_history(payment_status)');
   await run('CREATE INDEX IF NOT EXISTS idx_debug_cycle ON debug_history(cycle)');
+
+  // Migrate: add logs column if missing (safe for existing databases)
+  try {
+    await run(`ALTER TABLE jobs ADD COLUMN logs TEXT DEFAULT ''`);
+  } catch (_) {
+    // Column already exists — ignore
+  }
 }
 
 module.exports = { initDB, run, all, get, getDB };

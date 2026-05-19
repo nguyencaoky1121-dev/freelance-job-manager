@@ -21,7 +21,7 @@ async function runAutoMoneyMaker() {
   const flResults = await jobScanner.scanJobs();
   console.log(`   Result: ${flResults.new} new jobs found.`);
 
-  // 3. Lấy danh sách job cần xử lý
+  // 3. Lấy danh sách job cần xử lý và hiển thị cho người dùng
   console.log('\nStep 3: Fetching jobs to process...');
   const bounties = await all(
     `SELECT * FROM jobs
@@ -34,37 +34,19 @@ async function runAutoMoneyMaker() {
 
   console.log(`   Found ${bounties.length} potential jobs to process.`);
 
-  // 4. Xử lý từng job thông qua Pipeline
-  for (const bounty of bounties) {
-    console.log(`\n--- Processing [${bounty.platform.toUpperCase()}] ${bounty.title} ($${bounty.budget}) ---`);
-    try {
-      // Validate và skip nếu không phù hợp (nhưng chấp nhận budget thấp)
-      const validation = await pipeline.validateBounty(bounty);
+  // --- PAUSE FOR USER ACTION ---
+  // In a full UI, this is where you'd display the list of bounties
+  // and wait for the user to click 'Nộp Comment' or 'Gửi Bài'.
+  // For CLI, we'll simulate this by just listing them and waiting for a command.
+  console.log('\n--- Available Jobs ---');
+  bounties.forEach(bounty => {
+    console.log(`[${bounty.platform.toUpperCase()}] ${bounty.title} ($${bounty.budget}) - ID: ${bounty.id}`);
+  });
+  console.log('\n--- Awaiting User Action ---');
+  console.log('Please run the appropriate command (e.g., `node process_job.js <job_id>`) to proceed.');
 
-      // Override validation cho budget thấp nếu là job tự động
-      if (!validation.valid && validation.reason === 'No budget defined' && bounty.budget >= 0) {
-        console.log('   Note: Low budget job, processing anyway for profile building...');
-      } else if (!validation.valid) {
-        console.log(`   Skipping: ${validation.reason}`);
-        await run('UPDATE jobs SET status = ? WHERE id = ?', ['SKIPPED', bounty.id]);
-        continue;
-      }
-
-      // Agent 2 & 3 & 4: Analyze -> Generate -> Execute
-      console.log('   Executing Multi-Agent Pipeline...');
-      const result = await pipeline.processSingleBounty(bounty);
-
-      if (result.status === 'pr_created' || result.status === 'submitted') {
-        console.log(`   ✅ SUCCESS: ${result.status.toUpperCase()} - PR: ${result.prUrl || 'N/A'}`);
-      } else {
-        console.log(`   ⚠️ RESULT: ${JSON.stringify(result)}`);
-      }
-    } catch (err) {
-      console.error(`   ❌ ERROR processing job ${bounty.id}:`, err.message);
-    }
-  }
-
-  console.log('\n💰 --- AUTO MONEY MAKER CYCLE COMPLETE --- 💰');
+  // The actual processing loop is now triggered externally based on user input.
+  // We no longer auto-execute the pipeline here.
 }
 
 // Chạy script

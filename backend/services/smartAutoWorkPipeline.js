@@ -718,6 +718,143 @@ Changes implemented and tested locally. All acceptance criteria addressed.
   }
 
   /**
+   * STAGE 1: Analyze only (Semi-Auto)
+   */
+  async analyzeOnly(bounty) {
+    try {
+      console.log(`\n📊 Analyzing bounty: ${bounty.title}`);
+
+      // Scanner & Validator
+      const validation = await this.validateBounty(bounty);
+      if (!validation.valid) {
+        await run('UPDATE jobs SET status = ? WHERE id = ?', ['SKIPPED', bounty.id]);
+        return { success: false, reason: validation.reason };
+      }
+
+      // Strategist Agent
+      let issueComments = [];
+      if (bounty.platform === 'github') {
+        const urlParts = bounty.project_url.split('/');
+        const owner = urlParts[3];
+        const repo = urlParts[4];
+        const issueNumber = urlParts[6];
+        const currentCommentsResult = await this.githubAPI.getIssueComments(owner, repo, issueNumber);
+        issueComments = currentCommentsResult.success ? currentCommentsResult.comments : [];
+      }
+
+      const analysis = await this.deepAnalyze(bounty, issueComments);
+      if (!analysis) return { success: false, reason: 'Analysis failed' };
+
+      // Update DB with analysis and ANALYZED status
+      await run(
+        'UPDATE jobs SET status = ?, analysis = ? WHERE id = ?',
+        ['ANALYZED', JSON.stringify(analysis), bounty.id]
+      );
+
+      return { success: true, analysis };
+    } catch (err) {
+      console.error(`❌ Analysis Error:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * STAGE 2: Post attempt/roadmap comment (Semi-Auto - "Nộp" button)
+   */
+  async postAttemptOnly(bountyId) {
+    try {
+      const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
+      if (!bounty) throw new Error('Job not found');
+
+      const analysis = JSON.parse(bounty.analysis);
+
+      // Controller Agent: Send /attempt command
+      const attemptResult = await this.sendAttemptCommand(bounty, analysis);
+      if (!attemptResult.success) throw new Error(attemptResult.error);
+
+      analysis.last_comment_id = attemptResult.comment.id;
+
+      await run(
+        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, analysis = ? WHERE id = ?',
+        ['ATTEMPTED', JSON.stringify(analysis), bountyId]
+      );
+
+      console.log(`✅ Attempt comment posted for: ${bounty.title}`);
+      return { success: true };
+    } catch (err) {
+      console.error(`❌ Post Attempt Error:`, err.message);
+      await run('UPDATE jobs SET logs = ? WHERE id = ?', [`Error posting attempt: ${err.message}`, bountyId]);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * STAGE 3: Submit solution (Semi-Auto - "Gửi bài" button)
+   */
+  async submitSolutionOnly(bountyId) {
+    try {
+      const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
+      if (!bounty) throw new Error('Job not found');
+
+      const analysis = JSON.parse(bounty.analysis);
+
+      // Worker Agent: Generate code
+      console.log(`\n💻 Generating core implementation...`);
+      const solutionResult = await this.generateRealSolution(bounty, analysis);
+      if (!solutionResult.success) throw new Error(solutionResult.error);
+
+      // Reviewer Agent: Execute work (clone, push, PR)
+      console.log(`\n🧪 Executing work and creating PR...`);
+      const workResult = await this.executeWork(bounty, solutionResult.solutions, analysis);
+
+      if (!workResult.success) {
+        const errorMsg = workResult.error || 'Unknown execution error';
+        // Post error feedback if possible
+        if (bounty.platform === 'github') {
+          const urlParts = bounty.project_url.split('/');
+          await this.githubAPI.postComment(urlParts[3], urlParts[4], urlParts[6], `⚠️ Execution error: ${errorMsg}`);
+        }
+        throw new Error(errorMsg);
+      }
+
+      // Controller Agent: Track feedback
+      if (!workResult.simulated) {
+        const urlParts = bounty.project_url.split('/');
+        await this.startFeedbackTracking(bounty, workResult.prNumber, urlParts[3], urlParts[4], urlParts[6]);
+      }
+
+      const finalStatus = workResult.simulated ? 'SIMULATED_SUBMITTED' : 'SUBMITTED';
+
+      await run(
+        'UPDATE jobs SET solution = ?, status = ? WHERE id = ?',
+        [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), finalStatus, bountyId]
+      );
+
+      console.log(`✅ Solution submitted for: ${bounty.title}`);
+      return { success: true, prUrl: workResult.prUrl };
+    } catch (err) {
+      console.error(`❌ Submit Error:`, err.message);
+      await run('UPDATE jobs SET logs = ? WHERE id = ?', [`Error submitting solution: ${err.message}`, bountyId]);
+      return { success: false, error: err.message };
+    }
+  }
+
+  /**
+   * Get status of all active jobs
+   */
+  getStatus() {
+    return {
+      activeJobs: this.activeJobs.size,
+      trackedIssues: this.feedbackTracker.getTrackingStatus(),
+      jobs: Array.from(this.activeJobs.entries()).map(([id, job]) => ({
+        id,
+        ...job,
+        duration: Date.now() - job.startTime,
+      })),
+    };
+  }
+
+  /**
    * Cleanup and shutdown
    */
   shutdown() {
