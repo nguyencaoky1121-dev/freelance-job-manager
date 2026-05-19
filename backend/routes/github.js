@@ -5,6 +5,9 @@ const { GitHubAPI } = require('../services/githubAPI');
 const router = express.Router();
 const githubAPI = new GitHubAPI();
 
+// Base URL for internal API calls
+const API_BASE = process.env.API_BASE || `http://localhost:${process.env.PORT || 3000}/api`;
+
 /**
  * GET /api/github - Get all pending GitHub bounties
  */
