@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.env
+backend/db/jobs.db
+backend/db/jobs.db-shm
+backend/db/jobs.db-wal
+work-temp
+.git
+.vscode
+.claude
+*.md
