@@ -80,54 +80,51 @@ router.post('/:id/auto-submit', async (req, res) => {
       });
     }
 
+    if (!['github', 'gitcoin', 'algora'].includes(bounty.platform)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Chỉ hỗ trợ auto-submit cho GitHub, Gitcoin và Algora bounties',
+      });
+    }
+
+    if (bounty.bid_placed) {
+      return res.status(409).json({
+        success: false,
+        error: 'Already submitted to this bounty',
+        message: 'Bạn đã submit cho bounty này rồi',
+      });
+    }
+
     // Parse GitHub URL to get owner, repo, issue number
     const urlParts = bounty.project_url.split('/');
     const owner = urlParts[3];
     const repo = urlParts[4];
     const issueNumber = urlParts[6];
 
-    // Generate default comment if not provided
-    let submitComment = comment;
-    if (!submitComment) {
-      const githubUsername = process.env.GITHUB_USERNAME || 'freelancer';
-      submitComment = `Hi! I'm interested in working on this bounty. I'm a designer/developer with experience in UI/UX, frontend development, and web design.
+    // Thay thế bằng việc gọi pipeline autowork mới
+    try {
+      const autoworkRes = await fetch(`${API_BASE}/autowork/process/${bounty.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      const autoworkData = await autoworkRes.json();
 
-You can check out my work here: https://github.com/${githubUsername}
-
-I'd love to discuss the requirements and timeline. Looking forward to hearing from you!`;
-    }
-
-    // Post comment to GitHub issue
-    const submitResult = await githubAPI.postComment(owner, repo, issueNumber, submitComment);
-
-    if (submitResult.success) {
-      // Update job status
-      await run(
-        'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, bid_amount = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?',
-        ['SUBMITTED', bounty.budget, id]
-      );
-
-      if (global.broadcast) {
-        global.broadcast({
-          type: 'GITHUB_BOUNTY_SUBMITTED',
-          job_id: id,
-          title: bounty.title,
-          budget: bounty.budget,
-          url: bounty.project_url,
+      if (autoworkData.success) {
+        res.json({
+          success: true,
+          message: '✅ Bounty submission posted via Autowork pipeline!',
+          prUrl: autoworkData.prUrl,
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: autoworkData.error || 'Autowork pipeline failed',
+          message: 'Failed to submit bounty via Autowork pipeline',
         });
       }
-
-      res.json({
-        success: true,
-        message: '✅ Bounty submission posted!',
-        comment: submitResult.comment,
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: submitResult.error,
-        message: 'Failed to post comment to GitHub',
-      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
     }
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
