@@ -145,11 +145,6 @@ class WorkExecutor {
       return { success: false, error: err.message };
     }
   }
-    } catch (err) {
-      console.error('❌ Error cloning/branching:', err.message);
-      return { success: false, error: err.message };
-    }
-  }
 
   /**
    * Write solution code to file
