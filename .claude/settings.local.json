@@ -97,7 +97,9 @@
       "Bash(timeout 15 tail -f \"C:\\\\Users\\\\admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--thietke-kiem-tien\\\\bd2687c9-676a-4f19-b6aa-3efecec98d4e\\\\tasks\\\\blj9egdkl.output\")",
       "Bash(timeout 15 tail -f \"C:\\\\Users\\\\admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--thietke-kiem-tien\\\\bd2687c9-676a-4f19-b6aa-3efecec98d4e\\\\tasks\\\\b3leov16h.output\")",
       "Bash(timeout 15 tail -f \"C:\\\\Users\\\\admin\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\D--thietke-kiem-tien\\\\bd2687c9-676a-4f19-b6aa-3efecec98d4e\\\\tasks\\\\bbq039j8s.output\")",
-      "Bash(node -e \"const {all} = require\\('./backend/db/database'\\); \\(async\\(\\)=>{ const stats = await all\\(\\\\\"SELECT status, COUNT\\(*\\) as count FROM jobs GROUP BY status ORDER BY count DESC\\\\\"\\); console.log\\('Job Status Distribution:'\\); stats.forEach\\(s => console.log\\('  ' + s.status + ': ' + s.count\\)\\); }\\)\\(\\).catch\\(e=>console.error\\(e.message\\)\\)\")"
+      "Bash(node -e \"const {all} = require\\('./backend/db/database'\\); \\(async\\(\\)=>{ const stats = await all\\(\\\\\"SELECT status, COUNT\\(*\\) as count FROM jobs GROUP BY status ORDER BY count DESC\\\\\"\\); console.log\\('Job Status Distribution:'\\); stats.forEach\\(s => console.log\\('  ' + s.status + ': ' + s.count\\)\\); }\\)\\(\\).catch\\(e=>console.error\\(e.message\\)\\)\")",
+      "Bash(git checkout *)",
+      "Bash(git merge *)"
     ]
   }
 }
