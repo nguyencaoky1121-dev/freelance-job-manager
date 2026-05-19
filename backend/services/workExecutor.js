@@ -97,8 +97,8 @@ class WorkExecutor {
       // Use oauth2 token for HTTPS authentication
       const cloneUrl = `https://oauth2:${token}@github.com/${owner}/${repo}.git`;
 
-      // Retry clone up to 3 times (fork may need time to initialize)
-      const MAX_RETRIES = 3;
+      // Retry clone up to 5 times instead of 3, and increase backoff time
+      const MAX_RETRIES = 5;
       let lastErr = null;
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -111,7 +111,8 @@ class WorkExecutor {
           }
 
           // Clone into bountyDir (parent), creating repoDir
-          runGit(`clone --depth 1 ${cloneUrl} "${repo}"`, bountyDir, 120000);
+          // Add --config to help with some Git environments
+          runGit(`clone --depth 1 ${cloneUrl} "${repo}"`, bountyDir, 300000); // 5 min timeout
 
           // Verify .git exists
           const gitDir = path.join(repoDir, '.git');
@@ -129,7 +130,7 @@ class WorkExecutor {
           console.warn(`  ⚠️ Attempt ${attempt} failed: ${cloneErr.message}`);
 
           if (attempt < MAX_RETRIES) {
-            const delay = attempt * 5000; // 5s, 10s backoff
+            const delay = attempt * 10000; // 10s, 20s, 30s, 40s backoff
             console.log(`  ⏳ Waiting ${delay / 1000}s before retry...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
@@ -139,6 +140,11 @@ class WorkExecutor {
       // All retries exhausted
       console.error(`❌ All ${MAX_RETRIES} clone attempts failed: ${lastErr.message}`);
       return { success: false, error: `Clone failed after ${MAX_RETRIES} attempts: ${lastErr.message}` };
+    } catch (err) {
+      console.error('❌ Error cloning/branching:', err.message);
+      return { success: false, error: err.message };
+    }
+  }
     } catch (err) {
       console.error('❌ Error cloning/branching:', err.message);
       return { success: false, error: err.message };
@@ -277,8 +283,28 @@ class WorkExecutor {
           }
         }
 
-        runGit(`push -f origin ${branchName}`, repoDir, 120000);
-        return { success: true, message: `Branch ${branchName} pushed` };
+        // Retry push up to 3 times with exponential backoff
+        const PUSH_MAX_RETRIES = 3;
+        let pushLastErr = null;
+
+        for (let attempt = 1; attempt <= PUSH_MAX_RETRIES; attempt++) {
+          try {
+            console.log(`  🚀 Push attempt ${attempt}/${PUSH_MAX_RETRIES}...`);
+            runGit(`push -f origin ${branchName}`, repoDir, 300000); // 5 min timeout
+            return { success: true, message: `Branch ${branchName} pushed` };
+          } catch (pushErr) {
+            pushLastErr = pushErr;
+            console.warn(`  ⚠️ Push attempt ${attempt} failed: ${pushErr.message}`);
+            if (attempt < PUSH_MAX_RETRIES) {
+              const delay = attempt * 10000; // 10s, 20s backoff
+              console.log(`  ⏳ Waiting ${delay / 1000}s before retry...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+            }
+          }
+        }
+
+        console.warn(`⚠️ Git push failed after ${PUSH_MAX_RETRIES} attempts: ${pushLastErr.message}`);
+        return { success: false, error: pushLastErr.message };
       } catch (gitErr) {
         console.warn(`⚠️ Git push failed: ${gitErr.message}`);
         return { success: false, error: gitErr.message };

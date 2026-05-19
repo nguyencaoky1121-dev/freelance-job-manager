@@ -454,37 +454,56 @@ Changes implemented and tested locally. All acceptance criteria addressed.
   }
 
   /**
-   * PHASE 3: Process multiple bounties in parallel
+   * PHASE 3: Process multiple bounties SEQUENTIALLY to avoid overload
+   * Previously parallel, now sequential with delay between jobs
    */
   async processMultipleBounties(bounties) {
     try {
-      console.log(`\n🚀 Processing ${bounties.length} bounties in parallel`);
+      console.log(`\n🚀 Processing ${bounties.length} bounties SEQUENTIALLY (anti-overload mode)`);
 
       const results = [];
+      const DELAY_BETWEEN_JOBS_MS = 5000; // 5s delay between jobs
 
-      for (const bounty of bounties) {
+      for (let i = 0; i < bounties.length; i++) {
+        const bounty = bounties[i];
+
         if (this.activeJobs.has(bounty.id)) {
           console.log(`⏭️ Already processing ${bounty.id}`);
           continue;
         }
 
-        this.activeJobs.set(bounty.id, { status: 'validating', startTime: Date.now() });
+        console.log(`\n📦 [${i + 1}/${bounties.length}] Starting: ${bounty.title}`);
+        this.activeJobs.set(bounty.id, { status: 'processing', startTime: Date.now() });
 
-        this.processSingleBounty(bounty)
-          .then(result => {
-            this.activeJobs.delete(bounty.id);
-            results.push(result);
-          })
-          .catch(err => {
-            console.error(`❌ Error processing ${bounty.id}:`, err.message);
-            this.activeJobs.delete(bounty.id);
-          });
+        try {
+          const result = await this.processSingleBounty(bounty);
+          results.push(result);
+          console.log(`✅ [${i + 1}/${bounties.length}] Completed: ${bounty.title} → ${result.status}`);
+        } catch (err) {
+          console.error(`❌ [${i + 1}/${bounties.length}] Error processing ${bounty.id}:`, err.message);
+          results.push({ bountyId: bounty.id, status: 'error', error: err.message });
+        } finally {
+          this.activeJobs.delete(bounty.id);
+        }
+
+        // Delay between jobs to prevent overload
+        if (i < bounties.length - 1) {
+          console.log(`⏳ Waiting ${DELAY_BETWEEN_JOBS_MS / 1000}s before next job...`);
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_JOBS_MS));
+        }
       }
+
+      const successful = results.filter(r => r.status === 'pr_created').length;
+      const failed = results.filter(r => r.status === 'failed' || r.status === 'error').length;
+      const skipped = results.filter(r => r.status === 'skipped').length;
+
+      console.log(`\n📊 Batch Summary: ${successful} submitted, ${failed} failed, ${skipped} skipped out of ${results.length} total`);
 
       return {
         success: true,
-        processing: this.activeJobs.size,
-        message: `Started processing ${bounties.length} bounties`,
+        results,
+        summary: { successful, failed, skipped, total: results.length },
+        message: `Processed ${results.length} bounties: ${successful} submitted, ${failed} failed, ${skipped} skipped`,
       };
     } catch (err) {
       console.error('❌ Error processing bounties:', err.message);
@@ -783,8 +802,17 @@ Changes implemented and tested locally. All acceptance criteria addressed.
 
   /**
    * STAGE 2: "Nộp" button - Analyze, Code, and Submit in ONE SHOT
+   * Includes concurrency guard to prevent overload
    */
   async postAttemptOnly(bountyId) {
+    // Concurrency guard: prevent multiple jobs from running at once
+    if (this.isProcessing) {
+      console.warn(`⚠️ Pipeline is busy processing another job. Queuing ${bountyId}...`);
+      return { success: false, error: 'Pipeline is busy. Please wait for the current job to finish before submitting another.' };
+    }
+
+    this.isProcessing = true;
+
     try {
       console.log(`\n🚀 [ONE-SHOT] Starting full implementation for job: ${bountyId}`);
 
@@ -834,13 +862,23 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       console.error(`\n❌ [ONE-SHOT] Error:`, err.message);
       await run('UPDATE jobs SET logs = ? WHERE id = ?', [`Error in one-shot submission: ${err.message}`, bountyId]);
       return { success: false, error: err.message };
+    } finally {
+      this.isProcessing = false;
     }
   }
 
   /**
    * STAGE 3: Submit solution (Semi-Auto - "Gửi bài" button)
+   * Includes concurrency guard to prevent overload
    */
   async submitSolutionOnly(bountyId) {
+    if (this.isProcessing) {
+      console.warn(`⚠️ Pipeline is busy processing another job. Queuing ${bountyId}...`);
+      return { success: false, error: 'Pipeline is busy. Please wait for the current job to finish before submitting another.' };
+    }
+
+    this.isProcessing = true;
+
     try {
       const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
       if (!bounty) throw new Error('Job not found');
@@ -885,6 +923,8 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       console.error(`❌ Submit Error:`, err.message);
       await run('UPDATE jobs SET logs = ? WHERE id = ?', [`Error submitting solution: ${err.message}`, bountyId]);
       return { success: false, error: err.message };
+    } finally {
+      this.isProcessing = false;
     }
   }
 
