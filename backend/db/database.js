@@ -150,6 +150,13 @@ async function initDB() {
   } catch (_) {
     // Column already exists — ignore
   }
+
+  // Migrate: add auto_execute column if missing (safe for existing databases)
+  try {
+    await run(`ALTER TABLE jobs ADD COLUMN auto_execute BOOLEAN DEFAULT 0`);
+  } catch (_) {
+    // Column already exists — ignore
+  }
 }
 
 module.exports = { initDB, run, all, get, getDB };
