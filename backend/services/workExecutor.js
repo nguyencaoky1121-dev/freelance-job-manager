@@ -3,6 +3,18 @@ const fs = require('fs');
 const path = require('path');
 const { GitHubAPI } = require('./githubAPI');
 
+// Function to check if git is available
+function isGitAvailable() {
+  try {
+    execSync('git --version', { stdio: 'ignore' });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+const GIT_AVAILABLE = isGitAvailable();
+
 class WorkExecutor {
   constructor() {
     this.githubAPI = new GitHubAPI();
@@ -66,12 +78,17 @@ class WorkExecutor {
       console.log(`📦 Cloning ${cloneOwner}/${cloneRepo}...`);
       const authUrl = `https://${process.env.GITHUB_TOKEN}@github.com/${cloneOwner}/${cloneRepo}.git`;
       try {
-        execSync(`git clone --depth 1 ${authUrl} "${repoDir}"`, {
-          stdio: 'pipe',
-          timeout: 60000,
-        });
+        if (GIT_AVAILABLE) {
+          execSync(`git clone --depth 1 ${authUrl} "${repoDir}"`, {
+            stdio: 'pipe',
+            timeout: 60000,
+            shell: true,
+          });
+        } else {
+          throw new Error('Git command not available.');
+        }
       } catch (gitErr) {
-        console.warn(`⚠️ Git clone failed: ${gitErr.message}`);
+        console.warn(`⚠️ Git clone failed: ${gitErr.message}. Output: ${gitErr.stderr?.toString() || 'N/A'}`);
         console.log(`📥 Falling back to GitHub API download...`);
 
         // Fallback: Create directory and note that we can't clone
@@ -90,13 +107,18 @@ class WorkExecutor {
 
       // Create and checkout feature branch (if git is available)
       try {
-        console.log(`🌿 Creating branch ${branchName}...`);
-        execSync(`cd "${repoDir}" && git checkout -b ${branchName}`, {
-          stdio: 'pipe',
-          timeout: 30000, // 30s timeout
-        });
+        if (GIT_AVAILABLE) {
+          console.log(`🌿 Creating branch ${branchName}...`);
+          execSync(`cd "${repoDir}" && git checkout -b ${branchName}`, {
+            stdio: 'pipe',
+            timeout: 30000, // 30s timeout
+            shell: true,
+          });
+        } else {
+          throw new Error('Git command not available.');
+        }
       } catch (branchErr) {
-        console.warn(`⚠️ Git branch creation failed: ${branchErr.message}`);
+        console.warn(`⚠️ Git branch creation failed: ${branchErr.message}. Output: ${branchErr.stderr?.toString() || 'N/A'}`);
         console.log(`📝 Creating branch marker file instead...`);
         fs.writeFileSync(
           path.join(repoDir, '.branch'),
@@ -204,23 +226,26 @@ class WorkExecutor {
     try {
       console.log(`📝 Committing changes...`);
       try {
+        if (!GIT_AVAILABLE) throw new Error('Git command not available.');
+
         // Setup git config first to prevent commit failures
         const gitName = process.env.GITHUB_USERNAME || 'Auto Agent';
         const gitEmail = `${gitName.toLowerCase().replace(/\s+/g, '')}@users.noreply.github.com`;
-        execSync(`cd "${repoDir}" && git config user.name "${gitName}"`, { stdio: 'pipe' });
-        execSync(`cd "${repoDir}" && git config user.email "${gitEmail}"`, { stdio: 'pipe' });
+        execSync(`cd "${repoDir}" && git config user.name "${gitName}"`, { stdio: 'pipe', shell: true });
+        execSync(`cd "${repoDir}" && git config user.email "${gitEmail}"`, { stdio: 'pipe', shell: true });
 
-        execSync(`cd "${repoDir}" && git add -A`, { stdio: 'pipe', timeout: 30000 });
+        execSync(`cd "${repoDir}" && git add -A`, { stdio: 'pipe', timeout: 30000, shell: true });
         execSync(`cd "${repoDir}" && git commit -m "${commitMessage}"`, {
           stdio: 'pipe',
           timeout: 30000,
+          shell: true,
         });
         return {
           success: true,
           message: 'Changes committed',
         };
       } catch (gitErr) {
-        console.warn(`⚠️ Git commit failed: ${gitErr.message}`);
+        console.warn(`⚠️ Git commit failed: ${gitErr.message}. Output: ${gitErr.stderr?.toString() || 'N/A'}`);
         console.log(`📝 Creating commit marker file instead...`);
 
         // Create marker file for simulated commit
@@ -250,17 +275,20 @@ class WorkExecutor {
     try {
       console.log(`🚀 Pushing branch ${branchName}...`);
       try {
+        if (!GIT_AVAILABLE) throw new Error('Git command not available.');
+
         // Use force push since we are on our own fork and might be re-running a bounty
         execSync(`cd "${repoDir}" && git push -f origin ${branchName}`, {
           stdio: 'pipe',
           timeout: 60000, // 60s timeout
+          shell: true,
         });
         return {
           success: true,
           message: `Branch ${branchName} pushed`,
         };
       } catch (gitErr) {
-        console.warn(`⚠️ Git push failed: ${gitErr.message}`);
+        console.warn(`⚠️ Git push failed: ${gitErr.message}. Output: ${gitErr.stderr?.toString() || 'N/A'}`);
         console.log(`📤 Creating push marker file instead...`);
 
         // Create marker file for simulated push
