@@ -16,9 +16,30 @@ function isGitAvailable() {
 
 const GIT_AVAILABLE = isGitAvailable();
 
+/**
+ * Run a git command safely using cwd instead of cd && chaining.
+ * Returns { stdout, success } or throws on failure.
+ */
+function runGit(args, cwd, timeoutMs = 120000) {
+  const cmd = `git ${args}`;
+  console.log(`  🔧 [GIT] ${cmd} (in ${cwd})`);
+  try {
+    const stdout = execSync(cmd, {
+      cwd,
+      stdio: 'pipe',
+      timeout: timeoutMs,
+      encoding: 'utf-8',
+    });
+    return { stdout: stdout.trim(), success: true };
+  } catch (err) {
+    const stderr = err.stderr ? err.stderr.toString().trim() : err.message;
+    console.error(`  ❌ [GIT] Failed: ${stderr}`);
+    throw new Error(stderr);
+  }
+}
+
 class WorkExecutor {
-  constructor(githubAPI) {
-    this.githubAPI = githubAPI;
+  constructor() {
     this.workDir = path.join(process.cwd(), 'work-temp');
 
     if (!fs.existsSync(this.workDir)) {
@@ -44,7 +65,9 @@ class WorkExecutor {
   }
 
   /**
-   * Clone repository and create branch
+   * Clone repository and create branch.
+   * Uses cwd option instead of cd && chaining for reliability.
+   * Includes retry logic for freshly forked repos.
    */
   async cloneAndBranch(owner, repo, bountyId, branchName) {
     try {
@@ -53,32 +76,70 @@ class WorkExecutor {
 
       console.log(`📂 Cloning ${owner}/${repo} to ${repoDir}...`);
 
-      try {
-        if (!GIT_AVAILABLE) {
-          console.warn('⚠️ Git not available. Creating mock repository structure...');
-          if (!fs.existsSync(repoDir)) fs.mkdirSync(repoDir, { recursive: true });
-          return { success: true, repoDir, simulated: true };
-        }
-
-        const token = process.env.GITHUB_TOKEN;
-        if (!token) {
-          console.warn('⚠️ GITHUB_TOKEN not found. Git operations might fail.');
-        }
-
-        // Use oauth2 token for HTTPS authentication
-        const cloneUrl = token
-          ? `https://oauth2:${token}@github.com/${owner}/${repo}.git`
-          : `https://github.com/${owner}/${repo}.git`;
-
-        execSync(`git clone ${cloneUrl} "${repoDir}"`, { stdio: 'pipe', timeout: 60000 });
-        execSync(`cd "${repoDir}" && git checkout -b ${branchName}`, { stdio: 'pipe', shell: true });
-
-        return { success: true, repoDir };
-      } catch (gitErr) {
-        console.warn(`⚠️ Git clone/branch failed: ${gitErr.message}. Continuing in mock mode...`);
+      if (!GIT_AVAILABLE) {
+        console.warn('⚠️ Git not available. Creating mock repository structure...');
         if (!fs.existsSync(repoDir)) fs.mkdirSync(repoDir, { recursive: true });
         return { success: true, repoDir, simulated: true };
       }
+
+      const token = process.env.GITHUB_TOKEN;
+      const username = process.env.GITHUB_USERNAME;
+
+      if (!token) {
+        console.error('❌ GITHUB_TOKEN is required for git operations.');
+        return { success: false, error: 'GITHUB_TOKEN not configured' };
+      }
+
+      if (!username) {
+        console.error('❌ GITHUB_USERNAME is required for git operations.');
+        return { success: false, error: 'GITHUB_USERNAME not configured' };
+      }
+
+      // Use oauth2 token for HTTPS authentication
+      const cloneUrl = `https://oauth2:${token}@github.com/${owner}/${repo}.git`;
+
+      // Retry clone up to 3 times (fork may need time to initialize)
+      const MAX_RETRIES = 3;
+      let lastErr = null;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          console.log(`  📥 Clone attempt ${attempt}/${MAX_RETRIES}...`);
+
+          // Clean up if previous attempt left partial data
+          if (fs.existsSync(repoDir)) {
+            fs.rmSync(repoDir, { recursive: true, force: true });
+          }
+
+          // Clone into bountyDir (parent), creating repoDir
+          runGit(`clone --depth 1 ${cloneUrl} "${repo}"`, bountyDir, 120000);
+
+          // Verify .git exists
+          const gitDir = path.join(repoDir, '.git');
+          if (!fs.existsSync(gitDir)) {
+            throw new Error('.git directory not found after clone');
+          }
+
+          // Create branch using cwd (NOT cd &&)
+          runGit(`checkout -b ${branchName}`, repoDir);
+
+          console.log(`  ✅ Clone and branch successful on attempt ${attempt}`);
+          return { success: true, repoDir };
+        } catch (cloneErr) {
+          lastErr = cloneErr;
+          console.warn(`  ⚠️ Attempt ${attempt} failed: ${cloneErr.message}`);
+
+          if (attempt < MAX_RETRIES) {
+            const delay = attempt * 5000; // 5s, 10s backoff
+            console.log(`  ⏳ Waiting ${delay / 1000}s before retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+
+      // All retries exhausted
+      console.error(`❌ All ${MAX_RETRIES} clone attempts failed: ${lastErr.message}`);
+      return { success: false, error: `Clone failed after ${MAX_RETRIES} attempts: ${lastErr.message}` };
     } catch (err) {
       console.error('❌ Error cloning/branching:', err.message);
       return { success: false, error: err.message };
@@ -143,7 +204,7 @@ class WorkExecutor {
   }
 
   /**
-   * Commit changes
+   * Commit changes using cwd (NOT cd && chaining)
    */
   commitChanges(repoDir, commitMessage) {
     try {
@@ -157,15 +218,23 @@ class WorkExecutor {
         const gitName = process.env.GITHUB_USERNAME || 'AutoAgent';
         const gitEmail = `${gitName.toLowerCase().replace(/\s+/g, '')}@users.noreply.github.com`;
 
-        execSync(`cd "${repoDir}" && git config user.name "${gitName}"`, { stdio: 'pipe', shell: true });
-        execSync(`cd "${repoDir}" && git config user.email "${gitEmail}"`, { stdio: 'pipe', shell: true });
-        execSync(`cd "${repoDir}" && git add -A`, { stdio: 'pipe', shell: true });
-        execSync(`cd "${repoDir}" && git commit -m "${commitMessage}"`, { stdio: 'pipe', shell: true });
+        runGit(`config user.name "${gitName}"`, repoDir);
+        runGit(`config user.email "${gitEmail}"`, repoDir);
+        runGit('add -A', repoDir);
+
+        // Use -- to avoid commit message being interpreted as flags
+        const safeMessage = commitMessage.replace(/[\\"`$]/g, '\\$&');
+        runGit(`commit -m "${safeMessage}"`, repoDir);
 
         return { success: true, message: 'Changes committed' };
       } catch (gitErr) {
+        // Check if "nothing to commit" (not a real error)
+        if (gitErr.message.includes('nothing to commit')) {
+          console.warn('⚠️ Nothing to commit (working tree clean).');
+          return { success: true, message: 'Nothing to commit', simulated: true };
+        }
         console.warn(`⚠️ Git commit failed: ${gitErr.message}`);
-        return { success: true, message: 'Changes marked (fallback)', simulated: true };
+        return { success: false, error: gitErr.message };
       }
     } catch (err) {
       console.error('❌ Error committing:', err.message);
@@ -174,7 +243,7 @@ class WorkExecutor {
   }
 
   /**
-   * Push branch to GitHub
+   * Push branch to GitHub using cwd
    */
   async pushBranch(repoDir, branchName) {
     try {
@@ -184,12 +253,35 @@ class WorkExecutor {
         return { success: true, message: 'Push simulated', simulated: true };
       }
 
+      const token = process.env.GITHUB_TOKEN;
+      const username = process.env.GITHUB_USERNAME;
+
+      if (!token || !username) {
+        return { success: false, error: 'GITHUB_TOKEN or GITHUB_USERNAME not configured' };
+      }
+
       try {
-        execSync(`cd "${repoDir}" && git push -f origin ${branchName}`, { stdio: 'pipe', timeout: 60000, shell: true });
+        // Cấu hình lại remote URL để bao gồm token xác thực nhằm tránh lỗi 403 khi push
+        // Lấy thông tin remote hiện tại để biết owner/repo
+        const remoteUrlResult = runGit('remote get-url origin', repoDir);
+        let remoteUrl = remoteUrlResult.stdout;
+
+        // Chuyển đổi URL sang dạng có auth nếu cần
+        if (remoteUrl.includes('github.com') && !remoteUrl.includes('oauth2:')) {
+          // Trích xuất owner/repo từ URL hiện tại
+          const match = remoteUrl.match(/github\.com[/:](.+)\.git/);
+          if (match) {
+            const targetRepoPath = match[1];
+            const authenticatedUrl = `https://oauth2:${token}@github.com/${targetRepoPath}.git`;
+            console.log(`  🔧 [GIT] Updating remote URL for authentication...`);
+            runGit(`remote set-url origin ${authenticatedUrl}`, repoDir);
+          }
+        }
+
+        runGit(`push -f origin ${branchName}`, repoDir, 120000);
         return { success: true, message: `Branch ${branchName} pushed` };
       } catch (gitErr) {
         console.warn(`⚠️ Git push failed: ${gitErr.message}`);
-        // If push fails, it's likely a permission issue (need to fork)
         return { success: false, error: gitErr.message };
       }
     } catch (err) {
@@ -199,7 +291,7 @@ class WorkExecutor {
   }
 
   /**
-   * Create pull request
+   * Create pull request via GitHub API
    */
   async createPullRequest(owner, repo, branchName, title, description) {
     try {
@@ -210,8 +302,11 @@ class WorkExecutor {
         ? `${gitUser}:${branchName}`
         : branchName;
 
-      // PR always via API, but we mark if Git was missing
-      const response = await this.githubAPI.createPullRequest(owner, repo, head, 'main', title, description);
+      // Lazy-load GitHubAPI to avoid circular dependency
+      const { GitHubAPI } = require('./githubAPI');
+      const githubAPI = new GitHubAPI();
+
+      const response = await githubAPI.createPullRequest(owner, repo, head, 'main', title, description);
 
       if (response.success) {
         return {
@@ -255,19 +350,21 @@ class WorkExecutor {
   /**
    * Execute complete workflow
    */
-  async executeWorkflow(owner, repo, bountyId, branchName, solution, prTitle, prDescription) {
+  async executeWorkflow(owner, repo, bountyId, branchName, solution, prTitle, prDescription, originalOwner) {
     try {
       console.log(`\n🚀 Starting workflow for ${bountyId}...\n`);
 
       const initResult = this.initializeWorkspace(bountyId);
       if (!initResult.success) return initResult;
 
+      // Clone from the *owner* (which might be the forked repo owner)
       const cloneResult = await this.cloneAndBranch(owner, repo, bountyId, branchName);
       if (!cloneResult.success) return cloneResult;
 
       const repoDir = cloneResult.repoDir;
       const simulated = cloneResult.simulated || false;
 
+      // Write solution files
       let writeResult;
       if (Array.isArray(solution)) {
         writeResult = this.writeMultipleFiles(repoDir, solution);
@@ -281,13 +378,31 @@ class WorkExecutor {
 
       const testResult = this.runTests(repoDir);
 
-      const commitResult = this.commitChanges(repoDir, `${solution.commitMessage || 'Auto-generated solution'}`);
+      const commitMsg = solution.commitMessage || 'Auto-generated solution';
+      const commitResult = this.commitChanges(repoDir, commitMsg);
       if (!commitResult.success) return commitResult;
+
+      // Skip push if commit was simulated (nothing to push)
+      if (commitResult.simulated && commitResult.message === 'Nothing to commit') {
+        console.warn('⚠️ No changes to push. Workflow completed without PR.');
+        this.cleanupWorkspace(bountyId);
+        return {
+          success: false,
+          error: 'No code changes were generated (nothing to commit)',
+        };
+      }
 
       const pushResult = await this.pushBranch(repoDir, branchName);
       if (!pushResult.success) return pushResult;
 
-      const prResult = await this.createPullRequest(owner, repo, branchName, prTitle, prDescription);
+      // Create PR to the *originalOwner*'s repo
+      const prResult = await this.createPullRequest(
+        originalOwner || owner,
+        repo,
+        branchName,
+        prTitle,
+        prDescription
+      );
 
       this.cleanupWorkspace(bountyId);
 
