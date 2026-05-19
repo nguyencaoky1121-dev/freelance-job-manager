@@ -11,7 +11,7 @@ class SmartAutoWorkPipeline {
     this.codeGenerator = new IntelligentCodeGenerator();
     this.workExecutor = new WorkExecutor();
     this.githubAPI = new GitHubAPI();
-    this.feedbackTracker = new FeedbackTracker();
+    this.feedbackTracker = new FeedbackTracker((id, fb) => this.autonomousLoop(id, fb));
     this.isProcessing = false;
     this.activeJobs = new Map();
 
@@ -29,7 +29,7 @@ class SmartAutoWorkPipeline {
    * RECURSIVE AUTONOMOUS LOOP: The heart of the system
    * This method ensures work continues until payment or rejection
    */
-  async autonomousLoop(bountyId) {
+  async autonomousLoop(bountyId, feedback = null) {
     try {
       const bounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
       if (!bounty || ['PAID', 'REJECTED'].includes(bounty.status)) return;
@@ -39,11 +39,16 @@ class SmartAutoWorkPipeline {
 
       console.log(`\n🔄 [LOOP] Processing bounty: ${bounty.title} (Status: ${bounty.status})`);
 
-      // Check for new comments (Feedback Agent)
-      const commentsResult = await this.githubAPI.getIssueComments(bounty.github_owner, bounty.github_repo, bounty.github_issue_number);
-      if (!commentsResult.success) return;
+      // If feedback is provided directly, use it
+      let newFeedback = feedback;
 
-      const newFeedback = this.feedbackTracker.detectNewInstructions(commentsResult.comments, lastCommentId);
+      // Otherwise check for new comments (Feedback Agent)
+      if (!newFeedback) {
+        const commentsResult = await this.githubAPI.getIssueComments(bounty.github_owner, bounty.github_repo, bounty.github_issue_number);
+        if (!commentsResult.success) return;
+
+        newFeedback = this.feedbackTracker.detectNewInstructions(commentsResult.comments, lastCommentId);
+      }
 
       if (newFeedback) {
         console.log(`\n💡 New feedback detected! Re-triggering Strategist Agent...`);
@@ -54,7 +59,14 @@ class SmartAutoWorkPipeline {
 
         // Refresh bounty data and re-process
         const refreshedBounty = await get('SELECT * FROM jobs WHERE id = ?', [bountyId]);
-        return this.processSingleBounty(refreshedBounty, true, newFeedback);
+
+        // Use a generic author login if feedback was transformed into a simpler object
+        const feedbackObj = feedback ? {
+          user: { login: feedback.author },
+          body: feedback.body
+        } : newFeedback;
+
+        return this.processSingleBounty(refreshedBounty, true, feedbackObj);
       }
 
       // If PR is open but no feedback, just wait and poll

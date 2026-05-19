@@ -2,10 +2,11 @@ const { GitHubAPI } = require('./githubAPI');
 const { run, all, get } = require('../db/database');
 
 class FeedbackTracker {
-  constructor() {
+  constructor(onFeedbackReceived = null) {
     this.githubAPI = new GitHubAPI();
     this.trackedIssues = new Map();
     this.pollingInterval = null;
+    this.onFeedbackReceived = onFeedbackReceived;
   }
 
   /**
@@ -296,9 +297,22 @@ I'll update the PR shortly.`;
               }
             }
 
-            // Auto-respond to each feedback
-            for (const fb of feedbackResult.feedback) {
-              await this.respondToFeedback(bountyId, fb);
+            // Trigger autonomous loop if callback exists
+            if (this.onFeedbackReceived) {
+              for (const fb of feedbackResult.feedback) {
+                if (fb.type === 'changes_requested' || fb.type === 'question') {
+                  console.log(`🚀 [FEEDBACK] Triggering autonomous refinement for ${bountyId}`);
+                  this.onFeedbackReceived(bountyId, fb);
+                } else {
+                  // Standard response for approvals/others
+                  await this.respondToFeedback(bountyId, fb);
+                }
+              }
+            } else {
+              // Auto-respond to each feedback
+              for (const fb of feedbackResult.feedback) {
+                await this.respondToFeedback(bountyId, fb);
+              }
             }
           }
 
