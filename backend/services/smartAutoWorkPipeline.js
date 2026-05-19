@@ -602,14 +602,28 @@ Changes implemented and tested locally. All acceptance criteria addressed.
         );
       }
 
+      let finalStatus = 'FAILED';
+      if (workResult.success && !workResult.simulated) {
+        finalStatus = 'SUBMITTED';
+      } else if (workResult.success && workResult.simulated) {
+        finalStatus = 'SIMULATED_SUBMITTED'; // New status for simulated success
+      }
+
       // Update database status
       await run(
         'UPDATE jobs SET solution = ?, auto_execute = ?, status = ? WHERE id = ?',
-        [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), analysis.shouldAutoExecute ? 1 : 0, 'SUBMITTED', bounty.id]
+        [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), analysis.shouldAutoExecute ? 1 : 0, finalStatus, bounty.id]
       );
 
-      console.log(`\n✅ MULTI-AGENT PIPELINE COMPLETE`);
-      console.log(`   Status: Loop Active (Waiting for Feedback)`);
+      if (finalStatus === 'FAILED') {
+        console.log(`❌ MULTI-AGENT PIPELINE FAILED: ${workResult.error || 'Unknown error during work execution'}`);
+        return { bountyId: bounty.id, status: 'failed', error: workResult.error };
+      } else if (finalStatus === 'SIMULATED_SUBMITTED') {
+        console.log(`⚠️ MULTI-AGENT PIPELINE COMPLETE (SIMULATED PR): ${workResult.prUrl}`);
+      } else {
+        console.log(`\n✅ MULTI-AGENT PIPELINE COMPLETE`);
+        console.log(`   Status: Loop Active (Waiting for Feedback)`);
+      }
 
       return {
         bountyId: bounty.id,
