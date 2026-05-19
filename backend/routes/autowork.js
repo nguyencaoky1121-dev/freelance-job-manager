@@ -122,7 +122,7 @@ router.post('/process-all', async (req, res) => {
 });
 
 /**
- * POST /api/autowork/analyze/:id - Only analyze a bounty (no execution)
+ * POST /api/autowork/analyze/:id - Deep analyze a bounty and save to DB
  */
 router.post('/analyze/:id', async (req, res) => {
   try {
@@ -131,41 +131,49 @@ router.post('/analyze/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Bounty not found' });
     }
 
-    // Validate first
-    const validation = await pipeline.validateBounty(bounty);
-    if (!validation.valid) {
-      return res.json({
-        success: false,
-        bountyId: bounty.id,
-        title: bounty.title,
-        excluded: true,
-        reason: validation.reason,
-      });
+    const result = await pipeline.analyzeOnly(bounty);
+
+    if (global.broadcast) {
+      global.broadcast({ type: 'AUTOWORK_UPDATE', job_id: req.params.id, status: 'ANALYZED' });
     }
 
-    // Deep analyze with GitHub comments
-    const urlParts = (bounty.project_url || '').split('/');
-    const owner = urlParts[3];
-    const repo = urlParts[4];
-    const issueNumber = urlParts[6];
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
-    let comments = [];
-    if (owner && repo && issueNumber) {
-      const commentsResult = await pipeline.githubAPI.getIssueComments(owner, repo, issueNumber);
-      if (commentsResult.success) {
-        comments = commentsResult.comments;
-      }
+/**
+ * POST /api/autowork/attempt/:id - Post attempt comment to GitHub (Nộp)
+ */
+router.post('/attempt/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pipeline.postAttemptOnly(id);
+
+    if (global.broadcast) {
+      global.broadcast({ type: 'AUTOWORK_UPDATE', job_id: id, status: 'ATTEMPTED' });
     }
 
-    const analysis = await pipeline.deepAnalyze(bounty, comments);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 
-    res.json({
-      success: true,
-      bountyId: bounty.id,
-      title: bounty.title,
-      budget: bounty.budget,
-      analysis,
-    });
+/**
+ * POST /api/autowork/submit/:id - Generate solution and create PR (Gửi Bài)
+ */
+router.post('/submit/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pipeline.submitSolutionOnly(id);
+
+    if (global.broadcast) {
+      global.broadcast({ type: 'AUTOWORK_UPDATE', job_id: id, status: result.success ? 'SUBMITTED' : 'FAILED' });
+    }
+
+    res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

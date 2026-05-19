@@ -1278,6 +1278,71 @@
       }
 
       document.getElementById('actionsPanel').innerHTML = html || '<div class="empty"><p>No actions</p></div>';
+      // Add event listeners for new buttons
+      document.querySelectorAll('.attempt-button').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const jobId = e.target.dataset.id;
+          showNotif(`Đang Nộp kế hoạch cho bounty ${jobId}...`, 'info');
+          e.target.disabled = true;
+          try {
+            const res = await fetch(`${API_BASE}/autowork/attempt/${jobId}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              showNotif(`Kế hoạch đã Nộp cho bounty ${jobId}!`, 'success');
+              loadJobs();
+              selectedJob = jobs.find(j => j.id === jobId);
+              showActions();
+              updateLogPanel(jobId, data.logs);
+            } else {
+              showNotif(`Lỗi Nộp kế hoạch: ${data.error}`, 'error');
+              updateLogPanel(jobId, data.logs || data.error, true);
+            }
+          } catch (error) {
+            showNotif(`Lỗi Nộp kế hoạch: ${error.message}`, 'error');
+            updateLogPanel(jobId, error.message, true);
+          } finally {
+            e.target.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('.submit-button').forEach(button => {
+        button.addEventListener('click', async (e) => {
+          const jobId = e.target.dataset.id;
+          showNotif(`Đang Gửi Bài giải pháp cho bounty ${jobId}...`, 'info');
+          e.target.disabled = true;
+          try {
+            const res = await fetch(`${API_BASE}/autowork/submit/${jobId}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+              showNotif(`Giải pháp đã Gửi Bài cho bounty ${jobId}!`, 'success');
+              loadJobs();
+              selectedJob = jobs.find(j => j.id === jobId);
+              showActions();
+              updateLogPanel(jobId, data.logs);
+            } else {
+              showNotif(`Lỗi Gửi Bài giải pháp: ${data.error}`, 'error');
+              updateLogPanel(jobId, data.logs || data.error, true);
+            }
+          } catch (error) {
+            showNotif(`Lỗi Gửi Bài giải pháp: ${error.message}`, 'error');
+            updateLogPanel(jobId, error.message, true);
+          } finally {
+            e.target.disabled = false;
+          }
+        });
+      });
+
+      function updateLogPanel(jobId, logs, isError = false) {
+        const logPanel = document.getElementById(`logs-panel-${jobId}`);
+        if (logPanel) {
+          const logContent = logPanel.querySelector('.log-content');
+          logContent.textContent = logs;
+          logPanel.style.display = 'block';
+          logPanel.style.borderColor = isError ? 'var(--danger)' : 'var(--border)';
+          logContent.scrollTop = logContent.scrollHeight; // Scroll to bottom
+        }
+      }
     }
 
     // API ACTIONS
