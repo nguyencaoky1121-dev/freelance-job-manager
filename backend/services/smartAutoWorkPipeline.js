@@ -92,11 +92,12 @@ class SmartAutoWorkPipeline {
         budget = this.analyzer.extractBudget(bounty.description, bounty.title);
       }
 
-      // If budget is still 0, check if it's a bounty (which might have hidden reward)
+      // Check if it's a bounty (which might have hidden reward)
       const isBounty = bounty.title.toLowerCase().includes('bounty') ||
                        bounty.description?.toLowerCase().includes('bounty') ||
                        ['github', 'gitcoin', 'algora'].includes(bounty.platform);
 
+      // If budget is still 0 AND it's not a bounty, then it's not valid
       if (budget === 0 && !isBounty) {
         console.log(`⏭️ No budget defined`);
         return {
@@ -514,6 +515,14 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       console.log(`${'='.repeat(60)}`);
 
       // Agent 1: Job Scanner & Validator (Haiku)
+      let owner, repo, issueNumber;
+      if (bounty.platform === 'github' && bounty.project_url) {
+        const urlParts = bounty.project_url.split('/');
+        owner = urlParts[3];
+        repo = urlParts[4];
+        issueNumber = urlParts[6];
+      }
+
       if (!reAnalyzing) {
         const validation = await this.validateBounty(bounty);
         if (!validation.valid) {
@@ -529,11 +538,6 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       // Get issue comments for deep analysis (only for GitHub bounties)
       let issueComments = [];
       if (bounty.platform === 'github') {
-        const urlParts = bounty.project_url.split('/');
-        const owner = urlParts[3];
-        const repo = urlParts[4];
-        const issueNumber = urlParts[6];
-
         const currentCommentsResult = await this.githubAPI.getIssueComments(owner, repo, issueNumber);
         issueComments = currentCommentsResult.success ? currentCommentsResult.comments : [];
 
@@ -555,7 +559,25 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       // Agent 2: Strategic Requirement Analyzer (Opus)
       console.log(`\n📊 [STRATEGIST Agent] Deep analyzing bounty: ${bounty.title}`);
       const analysis = await this.deepAnalyze(bounty, issueComments);
-      if (!analysis || !analysis.isRealTask) {
+      if (!analysis) {
+        console.log(`⏭️ Analysis failed`);
+        await run(
+          'UPDATE jobs SET status = ? WHERE id = ?',
+          ['SKIPPED', bounty.id]
+        );
+        return { bountyId: bounty.id, status: 'skipped', reason: 'Analysis failed' };
+      }
+
+      // For GitHub/Gitcoin/Algora bounties without explicit budget,
+      // override isRealTask based on clarity alone (they have implicit rewards)
+      const isBountyPlatform = ['github', 'gitcoin', 'algora'].includes(bounty.platform);
+      if (isBountyPlatform && !analysis.isRealTask && analysis.taskClarity.score >= 0.3) {
+        console.log(`🔄 Overriding isRealTask for ${bounty.platform} bounty (implicit reward)`);
+        analysis.isRealTask = true;
+        analysis.shouldAutoExecute = analysis.taskClarity.score >= 0.5;
+      }
+
+      if (!analysis.isRealTask) {
         console.log(`⏭️ Not a real task or too vague`);
         await run(
           'UPDATE jobs SET status = ? WHERE id = ?',

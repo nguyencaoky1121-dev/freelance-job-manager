@@ -39,11 +39,36 @@ class WorkExecutor {
       const bountyDir = path.join(this.workDir, bountyId);
       const repoDir = path.join(bountyDir, 'repo');
 
-      // Clone repo
-      console.log(`📦 Cloning ${owner}/${repo}...`);
+      const gitUser = process.env.GITHUB_USERNAME;
+      if (!gitUser) {
+         console.warn(`⚠️ GITHUB_USERNAME not set in .env. Will attempt to clone original repo (might fail push).`);
+      }
+
+      let cloneOwner = owner;
+      let cloneRepo = repo;
+
+      // Try to fork the repo first if we are not the owner
+      if (gitUser && gitUser.toLowerCase() !== owner.toLowerCase()) {
+        console.log(`🍴 Forking ${owner}/${repo} to ${gitUser}...`);
+        const forkResult = await this.githubAPI.forkRepository(owner, repo);
+
+        if (forkResult.success) {
+          console.log(`✅ Fork successful (or already exists). Waiting for GitHub to process...`);
+          // Wait 5 seconds to ensure fork is ready to clone
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          cloneOwner = gitUser;
+        } else {
+          console.warn(`⚠️ Fork failed: ${forkResult.error}. Will attempt to clone original repo.`);
+        }
+      }
+
+      // Clone repo with token authentication
+      console.log(`📦 Cloning ${cloneOwner}/${cloneRepo}...`);
+      const authUrl = `https://${process.env.GITHUB_TOKEN}@github.com/${cloneOwner}/${cloneRepo}.git`;
       try {
-        execSync(`git clone https://github.com/${owner}/${repo}.git "${repoDir}"`, {
+        execSync(`git clone --depth 1 ${authUrl} "${repoDir}"`, {
           stdio: 'pipe',
+          timeout: 60000,
         });
       } catch (gitErr) {
         console.warn(`⚠️ Git clone failed: ${gitErr.message}`);
@@ -68,6 +93,7 @@ class WorkExecutor {
         console.log(`🌿 Creating branch ${branchName}...`);
         execSync(`cd "${repoDir}" && git checkout -b ${branchName}`, {
           stdio: 'pipe',
+          timeout: 30000, // 30s timeout
         });
       } catch (branchErr) {
         console.warn(`⚠️ Git branch creation failed: ${branchErr.message}`);
@@ -178,9 +204,16 @@ class WorkExecutor {
     try {
       console.log(`📝 Committing changes...`);
       try {
-        execSync(`cd "${repoDir}" && git add -A`, { stdio: 'pipe' });
+        // Setup git config first to prevent commit failures
+        const gitName = process.env.GITHUB_USERNAME || 'Auto Agent';
+        const gitEmail = `${gitName.toLowerCase().replace(/\s+/g, '')}@users.noreply.github.com`;
+        execSync(`cd "${repoDir}" && git config user.name "${gitName}"`, { stdio: 'pipe' });
+        execSync(`cd "${repoDir}" && git config user.email "${gitEmail}"`, { stdio: 'pipe' });
+
+        execSync(`cd "${repoDir}" && git add -A`, { stdio: 'pipe', timeout: 30000 });
         execSync(`cd "${repoDir}" && git commit -m "${commitMessage}"`, {
           stdio: 'pipe',
+          timeout: 30000,
         });
         return {
           success: true,
@@ -217,8 +250,10 @@ class WorkExecutor {
     try {
       console.log(`🚀 Pushing branch ${branchName}...`);
       try {
-        execSync(`cd "${repoDir}" && git push origin ${branchName}`, {
+        // Use force push since we are on our own fork and might be re-running a bounty
+        execSync(`cd "${repoDir}" && git push -f origin ${branchName}`, {
           stdio: 'pipe',
+          timeout: 60000, // 60s timeout
         });
         return {
           success: true,
@@ -235,8 +270,9 @@ class WorkExecutor {
         );
 
         return {
-          success: true,
-          message: `Branch ${branchName} marked for push (git not available)`,
+          success: false, // Force failure if push failed for real repo
+          message: `Branch ${branchName} failed to push`,
+          error: gitErr.message,
         };
       }
     } catch (err) {
@@ -255,11 +291,16 @@ class WorkExecutor {
     try {
       console.log(`📋 Creating pull request...`);
 
+      const gitUser = process.env.GITHUB_USERNAME;
+      const head = (gitUser && gitUser.toLowerCase() !== owner.toLowerCase())
+        ? `${gitUser}:${branchName}`
+        : branchName;
+
       // Try to create PR via GitHub API
       const response = await this.githubAPI.createPullRequest(
         owner,
         repo,
-        branchName,
+        head,
         'main',
         title,
         description
@@ -275,18 +316,12 @@ class WorkExecutor {
 
       // If PR creation fails, still return success with a simulated PR
       console.warn(`⚠️ PR creation via API failed: ${response.error}`);
-      console.log(`📋 Creating simulated PR record...`);
-
-      // Generate a simulated PR number
-      const simulatedPRNumber = Math.floor(Math.random() * 10000) + 1000;
-      const simulatedPRUrl = `https://github.com/${owner}/${repo}/pull/${simulatedPRNumber}`;
 
       return {
-        success: true,
-        prUrl: simulatedPRUrl,
-        prNumber: simulatedPRNumber,
+        success: false, // Force failure for real GitHub PRs
+        error: response.error,
         simulated: true,
-        message: 'PR created (simulated - git/API not fully available)',
+        message: 'PR creation failed',
       };
     } catch (err) {
       console.error('❌ Error creating PR:', err.message);

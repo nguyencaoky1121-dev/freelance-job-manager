@@ -288,12 +288,8 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
     }
 
     // Exclude requests without budget
-    const extractedBudget = this.extractBudget(description, title);
-    const budget = existingBudget > 0 ? existingBudget : extractedBudget;
-
-    if (budget === 0) {
-      return { excluded: true, reason: 'No budget defined' };
-    }
+    // Note: Budget validation is now handled primarily in the orchestrator (SmartAutoWorkPipeline)
+    // to allow for platform-specific logic (e.g. GitHub bounties with implicit rewards)
 
     return { excluded: false };
   }
