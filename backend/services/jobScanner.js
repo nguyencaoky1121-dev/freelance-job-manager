@@ -118,13 +118,22 @@ class JobScanner {
           }
 
           // Map project to our format
+          let budget = project.budget?.minimum || project.budget?.average || 0;
+
+          // Try to extract budget from title/description if 0
+          if (budget === 0) {
+            const combined = `${project.title} ${project.preview_description || project.description || ''}`;
+            const match = combined.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+            if (match) budget = parseFloat(match[1].replace(/,/g, ''));
+          }
+
           const job = {
             id: `fl-${project.id}-${Date.now()}`,
             platform: 'freelancer',
             external_id: String(project.id),
             title: project.title || 'Untitled',
             description: project.preview_description || project.description || '',
-            budget: project.budget?.minimum || project.budget?.average || 0,
+            budget: budget,
             currency: project.currency?.code || 'USD',
             skills: JSON.stringify(jobSkills),
             client_name: project.owner?.username || 'Unknown',

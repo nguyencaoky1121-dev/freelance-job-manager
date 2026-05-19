@@ -3,8 +3,12 @@ const { SmartRequirementAnalyzer } = require('./smartRequirementAnalyzer');
 class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
   /**
    * Deep parse GitHub issue to extract real requirements
+   * @param {string} title - Issue/job title
+   * @param {string} description - Issue/job description
+   * @param {Array} comments - Issue comments (GitHub only)
+   * @param {number} existingBudget - Budget from database column (takes priority over text extraction)
    */
-  parseGitHubIssue(title, description, comments = []) {
+  parseGitHubIssue(title, description, comments = [], existingBudget = 0) {
     const baseAnalysis = this.analyze(title, description);
 
     // Extract structured requirements from description
@@ -23,10 +27,16 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
     const commentAnalysis = this.analyzeComments(comments);
 
     // Detect if this is a real task or vague request
-    const taskClarity = this.assessTaskClarity(description, acceptanceCriteria, codeExamples);
+    const taskClarity = this.assessTaskClarity(description, acceptanceCriteria, codeExamples, Number(existingBudget) > 0);
 
-    // Extract budget if mentioned
-    const budget = this.extractBudget(description, title);
+    // Use DB budget first, fall back to text extraction
+    const extractedBudget = this.extractBudget(description, title);
+    const budget = Number(existingBudget) > 0 ? Number(existingBudget) : extractedBudget;
+
+    // For Freelancer jobs with DB budget, lower the clarity threshold
+    // since they have structured requirements from the platform itself
+    const hasBudget = budget > 0;
+    const clarityThreshold = Number(existingBudget) > 0 ? 0.25 : 0.6;
 
     return {
       ...baseAnalysis,
@@ -39,8 +49,8 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
       budget,
       // NEW: Categorize the work strategy
       workCategory: this.determineWorkCategory(budget, taskClarity.score, baseAnalysis.taskType),
-      isRealTask: taskClarity.score >= 0.6 && budget > 0,
-      shouldAutoExecute: budget > 0 && budget < 50 && taskClarity.score >= 0.6,
+      isRealTask: taskClarity.score >= clarityThreshold && hasBudget,
+      shouldAutoExecute: hasBudget && budget < 50 && taskClarity.score >= clarityThreshold,
       // NEW: Override suggestedApproach with deep analysis data
       suggestedApproach: this.suggestApproach(description, acceptanceCriteria, mentionedFiles),
     };
@@ -200,8 +210,8 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
   /**
    * Assess how clear and specific the task is
    */
-  assessTaskClarity(description, acceptanceCriteria, codeExamples) {
-    let score = 0;
+  assessTaskClarity(description, acceptanceCriteria, codeExamples, hasExistingBudget = false) {
+    let score = hasExistingBudget ? 0.35 : 0; // Base score for paid jobs
 
     // Clear description
     if (description.length > 300) score += 0.2;
@@ -215,7 +225,7 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
     if (codeExamples.length > 0) score += 0.2;
 
     // Has specific design style requirements
-    const designStyles = ['glassmorphism', 'neo-brutalism', 'dark luxury', 'minimalist', 'vintage'];
+    const designStyles = ['glassmorphism', 'neo-brutalism', 'dark luxury', 'minimalist', 'vintage', 'elegant', 'modern', 'professional'];
     if (designStyles.some(style => description.toLowerCase().includes(style))) {
       score += 0.15;
     }
@@ -226,14 +236,14 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
     score -= vagueCount * 0.1;
 
     // Has specific requirements
-    if (description.includes('must') || description.includes('should') || description.includes('require')) {
+    if (description.includes('must') || description.includes('should') || description.includes('require') || description.includes('need')) {
       score += 0.1;
     }
 
     return {
       score: Math.min(Math.max(score, 0), 1),
-      isVague: score < 0.4,
-      needsClarification: score < 0.6,
+      isVague: score < 0.3,
+      needsClarification: score < 0.5,
     };
   }
 
@@ -259,7 +269,7 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
   /**
    * Check if request should be excluded
    */
-  shouldExclude(title, description) {
+  shouldExclude(title, description, existingBudget = 0) {
     const fullText = `${title} ${description}`.toLowerCase();
 
     // Exclude personal info requests
@@ -278,7 +288,9 @@ class AdvancedRequirementAnalyzer extends SmartRequirementAnalyzer {
     }
 
     // Exclude requests without budget
-    const budget = this.extractBudget(description, title);
+    const extractedBudget = this.extractBudget(description, title);
+    const budget = existingBudget > 0 ? existingBudget : extractedBudget;
+
     if (budget === 0) {
       return { excluded: true, reason: 'No budget defined' };
     }
