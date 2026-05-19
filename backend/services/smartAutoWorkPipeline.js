@@ -519,8 +519,8 @@ Changes implemented and tested locally. All acceptance criteria addressed.
         if (!validation.valid) {
           console.log(`⏭️ Skipping: ${validation.reason}`);
           await run(
-            'UPDATE jobs SET status = ? WHERE id = ?',
-            ['SKIPPED', bounty.id]
+            'UPDATE jobs SET status = ?, analysis = ? WHERE id = ?',
+            ['SKIPPED', JSON.stringify({ exclusionReason: validation.exclusionReason }), bounty.id]
           );
           return { bountyId: bounty.id, status: 'skipped', reason: validation.reason };
         }
