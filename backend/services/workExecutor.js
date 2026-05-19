@@ -91,8 +91,7 @@ class WorkExecutor {
       }
 
       if (!username) {
-        console.error('❌ GITHUB_USERNAME is required for git operations.');
-        return { success: false, error: 'GITHUB_USERNAME not configured' };
+        console.warn('⚠️ GITHUB_USERNAME not configured. Using "AutoAgent" as fallback for git config.');
       }
 
       // Use oauth2 token for HTTPS authentication
