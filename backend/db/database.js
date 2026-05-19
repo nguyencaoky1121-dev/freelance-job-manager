@@ -76,7 +76,8 @@ async function initDB() {
     completed_at DATETIME,
     paid_at DATETIME,
     earnings REAL DEFAULT 0,
-    logs TEXT DEFAULT ''
+    logs TEXT DEFAULT '',
+    auto_execute BOOLEAN DEFAULT 0
   )`);
 
   await run(`CREATE TABLE IF NOT EXISTS messages (
