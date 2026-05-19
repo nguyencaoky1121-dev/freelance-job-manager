@@ -566,10 +566,10 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       // Agent 5 (Controller): Send /attempt command
       const attemptResult = await this.sendAttemptCommand(bounty, analysis);
       if (!attemptResult.success) {
-        return { bountyId: bounty.id, status: 'failed', error: attemptResult.error };
+        console.warn(`⚠️ Warning: Failed to send attempt command (${attemptResult.error}), but continuing with implementation...`);
+      } else {
+        analysis.last_comment_id = attemptResult.comment.id;
       }
-
-      analysis.last_comment_id = attemptResult.comment.id;
 
       await run(
         'UPDATE jobs SET status = ?, bid_placed = 1, bid_placed_at = CURRENT_TIMESTAMP, analysis = ? WHERE id = ?',
