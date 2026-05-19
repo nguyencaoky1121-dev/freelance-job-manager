@@ -81,6 +81,7 @@ class SmartAutoWorkPipeline {
         return {
           valid: false,
           reason: exclusion.reason,
+          exclusionReason: exclusion.reason,
         };
       }
 
