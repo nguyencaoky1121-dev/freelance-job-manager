@@ -44,6 +44,13 @@ class ScannerManager {
    */
   async performScan() {
     try {
+      // Ưu tiên xử lý job trước khi quét mới.
+      // Kiểm tra xem có pipeline đang xử lý job nào không.
+      if (global.autoworkPipeline && global.autoworkPipeline.getStatus().activeJobs > 0) {
+        console.log('⏭️ Pipeline is busy processing jobs. Skipping scheduled scan to prioritize execution.');
+        return;
+      }
+
       const result = await this.jobScanner.scanJobs();
       if (result.success) {
         console.log(`   Scan results: ${result.new} new jobs, ${result.analyzed} analyzed, ${result.skipped} skipped.`);

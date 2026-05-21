@@ -75,15 +75,28 @@ try {
 
 // Broadcast to all connected clients
 function broadcast(data) {
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(data));
-    }
+  if (wss && wss.clients) {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify(data));
+      }
+    });
+  }
+}
+
+// System logging with broadcast
+function sysLog(message, type = 'SYSTEM_INFO') {
+  console.log(`[${type}] ${message}`);
+  broadcast({
+    type,
+    message,
+    timestamp: new Date().toISOString()
   });
 }
 
-// Make broadcast available globally
+// Make broadcast and sysLog available globally
 global.broadcast = broadcast;
+global.sysLog = sysLog;
 
 // Initialize database and start server
 async function start() {
@@ -92,21 +105,25 @@ async function start() {
     console.log('✅ Database initialized');
 
     app.listen(PORT, () => {
-      console.log(`🚀 Server running at http://localhost:${PORT}`);
-      console.log(`📡 WebSocket running at ws://localhost:${WS_PORT}`);
-      console.log(`💰 PayPal: ${process.env.PAYPAL_EMAIL || 'Not configured'}`);
+      sysLog(`🚀 Server running at http://localhost:${PORT}`);
+      sysLog(`📡 WebSocket running at ws://localhost:${WS_PORT}`);
+      sysLog(`💰 PayPal: ${process.env.PAYPAL_EMAIL || 'Not configured'}`);
     });
 
     // Start job scanner (auto-scan)
+    const { InternalAutoWorkPipeline } = require('./services/internalAutoWorkPipeline');
+    const autoworkPipeline = new InternalAutoWorkPipeline();
+    global.autoworkPipeline = autoworkPipeline; // Export pipeline ra global để scannerManager có thể kiểm tra
+
     const scannerManager = new ScannerManager();
     const scanInterval = parseInt(process.env.SCAN_INTERVAL) || 60000;
     scannerManager.startScanning(scanInterval);
-    console.log(`🔍 Job scanner will run every ${scanInterval / 1000}s`);
+    sysLog(`🔍 Job scanner will run every ${scanInterval / 1000}s`);
 
     // Start job monitor (auto-check for messages and awards)
     const monitorInterval = parseInt(process.env.MONITOR_INTERVAL) || 120000;
     monitor.startAutoMonitoring(monitorInterval);
-    console.log(`📬 Job monitor will run every ${monitorInterval / 1000}s`);
+    sysLog(`📬 Job monitor will run every ${monitorInterval / 1000}s`);
 
   } catch (err) {
     console.error('❌ Failed to start server:', err);

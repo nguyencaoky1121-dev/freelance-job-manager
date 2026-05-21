@@ -142,17 +142,36 @@ class JobScanner {
             bidCount: project.bid_stats?.bid_count || 0,
           };
 
-          // Analyze the job
-          const analysis = analyzeJob(job);
-
           // Save to database
+          let status = 'ANALYZED';
+          let autoAccepted = false;
+          let autoAcceptReason = '';
+
+          // Auto-accept for jobs under $100
+          if (job.budget > 0 && job.budget <= 100) {
+            status = 'AUTO_APPROVED_LOW_BUDGET';
+            autoAccepted = true;
+            autoAcceptReason = 'Tự động chấp nhận job dưới $100';
+            console.log(`💰 Job dưới $100 (ID: ${job.id}). Tự động chấp nhận.`);
+            if (global.sysLog) {
+              global.sysLog(`💰 Tự động chấp nhận job dưới $100: ${job.title}`, 'AUTOWORK_INFO');
+            }
+          }
+
+          // Update analysis with auto-accept flags
+          const finalAnalysis = {
+            ...analysis,
+            autoAccepted,
+            autoAcceptReason
+          };
+
           await run(
             `INSERT INTO jobs (id, platform, external_id, title, description, budget, currency, skills, status, analysis, proposal, client_name, client_id, project_url)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
               job.id, job.platform, job.external_id, job.title, job.description,
-              job.budget, job.currency, job.skills, 'ANALYZED',
-              JSON.stringify(analysis), analysis.proposal,
+              job.budget, job.currency, job.skills, status,
+              JSON.stringify(finalAnalysis), analysis.proposal,
               job.client_name, job.client_id, job.project_url,
             ]
           );
@@ -164,7 +183,7 @@ class JobScanner {
           if (global.broadcast) {
             global.broadcast({
               type: 'NEW_JOB',
-              job: { ...job, analysis, status: 'ANALYZED' },
+              job: { ...job, analysis: finalAnalysis, status: status },
             });
           }
 

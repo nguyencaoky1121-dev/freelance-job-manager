@@ -744,7 +744,7 @@ Changes implemented and tested locally. All acceptance criteria addressed.
 
       // Update database status
       await run(
-        'UPDATE jobs SET solution = ?, auto_execute = ?, status = ? WHERE id = ?',
+        'UPDATE jobs SET solution = ?, auto_execute = ?, status = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?',
         [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), analysis.shouldAutoExecute ? 1 : 0, finalStatus, bounty.id]
       );
 
@@ -864,7 +864,7 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       const finalStatus = workResult.simulated ? 'SIMULATED_SUBMITTED' : 'SUBMITTED';
 
       await run(
-        'UPDATE jobs SET solution = ?, status = ? WHERE id = ?',
+        'UPDATE jobs SET solution = ?, status = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?',
         [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), finalStatus, bountyId]
       );
 
@@ -925,7 +925,7 @@ Changes implemented and tested locally. All acceptance criteria addressed.
       const finalStatus = workResult.simulated ? 'SIMULATED_SUBMITTED' : 'SUBMITTED';
 
       await run(
-        'UPDATE jobs SET solution = ?, status = ? WHERE id = ?',
+        'UPDATE jobs SET solution = ?, status = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?',
         [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), finalStatus, bountyId]
       );
 
@@ -934,6 +934,78 @@ Changes implemented and tested locally. All acceptance criteria addressed.
     } catch (err) {
       console.error(`❌ Submit Error:`, err.message);
       await run('UPDATE jobs SET logs = ? WHERE id = ?', [`Error submitting solution: ${err.message}`, bountyId]);
+      return { success: false, error: err.message };
+    } finally {
+      this.isProcessing = false;
+    }
+  }
+
+  /**
+   * Get status of all active jobs
+   */
+  getStatus() {
+    return {
+      activeJobs: this.activeJobs.size,
+      trackedIssues: this.feedbackTracker.getTrackingStatus(),
+      jobs: Array.from(this.activeJobs.entries()).map(([id, job]) => ({
+        id,
+        ...job,
+        duration: Date.now() - job.startTime,
+      })),
+    };
+  }
+
+  /**
+   * One-Shot Processing: Trigger pipeline for a specific job immediately
+   */
+  async postAttemptOnly(jobId) {
+    // Concurrency guard: prevent multiple jobs from running at once
+    if (this.isProcessing) {
+      console.warn(`⚠️ Pipeline is busy processing another job. Queuing ${jobId}...`);
+      if (global.sysLog) global.sysLog(`⚠️ Pipeline đang bận. Đang xếp hàng: ${jobId}`, 'AUTOWORK_QUEUE');
+      return { success: false, error: 'Pipeline is busy. Please wait for the current job to finish before submitting another.' };
+    }
+
+    this.isProcessing = true;
+
+    try {
+      console.log(`\n🚀 [ONE-SHOT] Starting full implementation for job: ${jobId}`);
+      if (global.sysLog) global.sysLog(`🚀 Bắt đầu xử lý tự động cho Job ID: ${jobId}`, 'AUTOWORK_START');
+
+      // Fetch job details from DB
+      const bounty = await get('SELECT * FROM jobs WHERE id = ?', [jobId]);
+      if (!bounty) {
+        console.error(`❌ Job ${jobId} not found in database`);
+        if (global.sysLog) global.sysLog(`❌ Lỗi: Không tìm thấy Job ID ${jobId}`, 'AUTOWORK_ERROR');
+        return { success: false, error: 'Job not found' };
+      }
+
+      // Add to active jobs for status tracking
+      this.activeJobs.set(jobId, { status: 'starting', startTime: Date.now() });
+
+      // Run processing: Analyze -> Accept -> Generate -> Execute -> Track feedback
+      const result = await this.processSingleBounty(bounty);
+
+      // Remove from active jobs
+      this.activeJobs.delete(jobId);
+
+      // Log final result
+      if (result.status === 'pr_created') {
+        console.log(`✅ [ONE-SHOT] Complete! Solution submitted for: ${bounty.title}. PR: ${result.prUrl}`);
+        if (global.sysLog) global.sysLog(`🏆 THÀNH CÔNG: Đã nộp bounty ${bounty.title} (PR: ${result.prUrl})`, 'AUTOWORK_SUCCESS');
+      } else if (result.status === 'failed' || result.status === 'error') {
+        console.error(`❌ [ONE-SHOT] Failed for ${bounty.title}: ${result.error}`);
+        if (global.sysLog) global.sysLog(`❌ THẤT BẠI: Xử lý bounty ${bounty.title} thất bại. Lỗi: ${result.error}`, 'AUTOWORK_ERROR');
+      } else {
+        console.log(`🔄 [ONE-SHOT] Partially completed for ${bounty.title}: ${result.status}`);
+        if (global.sysLog) global.sysLog(`🟡 CẬP NHẬT: Xử lý bounty ${bounty.title} đang ở trạng thái: ${result.status}`, 'AUTOWORK_INFO');
+      }
+
+      return { success: true, result };
+    } catch (err) {
+      console.error(`❌ ONE-SHOT PROCESSING CRITICAL ERROR for ${jobId}:`, err.message);
+      if (global.sysLog) global.sysLog(`❌ LỖI NGHIÊM TRỌNG: ${err.message}`, 'AUTOWORK_CRITICAL_ERROR');
+      this.activeJobs.delete(jobId);
       return { success: false, error: err.message };
     } finally {
       this.isProcessing = false;

@@ -6,42 +6,134 @@
   <title>Freelance Manager</title>
   <style>
     :root {
-      --bg: #f1f5f9;
-      --surface: #ffffff;
-      --surface-alt: #f8fafc;
-      --border: #e2e8f0;
-      --text: #0f172a;
-      --text-secondary: #64748b;
-      --text-muted: #94a3b8;
+      --bg: #0f172a; /* Nền tối sâu */
+      --surface: #1e293b; /* Bề mặt thẻ */
+      --surface-alt: #334155; /* Bề mặt phụ */
+      --border: rgba(255, 255, 255, 0.08); /* Viền mờ */
+      --text: #f8fafc; /* Chữ trắng sáng */
+      --text-secondary: #94a3b8; /* Chữ xám xanh */
+      --text-muted: #64748b;
       --primary: #3b82f6;
-      --primary-hover: #2563eb;
+      --primary-hover: #60a5fa;
       --success: #10b981;
-      --success-light: #ecfdf5;
+      --success-light: rgba(16, 185, 129, 0.1);
       --warning: #f59e0b;
-      --warning-light: #fffbeb;
+      --warning-light: rgba(245, 158, 11, 0.1);
       --danger: #ef4444;
-      --danger-light: #fef2f2;
+      --danger-light: rgba(239, 68, 68, 0.1);
       --info: #0ea5e9;
-      --info-light: #f0f9ff;
-      --github: #24292e;
-      --github-accent: #238636;
-      --contest: #e67e22;
-      --radius: 10px;
-      --radius-sm: 6px;
-      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-      --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
-      --shadow-lg: 0 10px 25px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.04);
-      --transition: 200ms ease;
+      --info-light: rgba(14, 165, 233, 0.1);
+      --github: #ffffff;
+      --github-bg: #24292e;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+      --transition: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+      --glass: rgba(30, 41, 59, 0.7);
     }
 
-    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
-      min-height: 100vh;
-      line-height: 1.5;
+      background-image:
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+    }
+
+    /* ─── GLASSMORPHISM PANEL ─── */
+    .panel, .bottom-panel {
+      background: var(--glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header, .bottom-panel-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+    }
+
+    /* ─── BOUNTY CARDS ─── */
+    .card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 20px;
+      transition: all var(--transition);
+    }
+
+    .card:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+    }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      border: 2px solid transparent;
+      background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.2); }
+
+    /* ─── MODERN APP HEADER ─── */
+    .app-header {
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      height: 64px;
+    }
+
+    .app-logo .icon {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    }
+
+    /* ─── SYSTEM LOGS ─── */
+    #systemLogs {
+      background: #0a0f1d !important;
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    /* ─── BOUNTY TABLE ─── */
+    .bounty-table th {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-secondary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .bounty-table td {
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .bounty-table tr:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .bounty-table .title-cell {
+      color: var(--text);
+    }
+
+    .btn-card.github-btn { background: var(--primary); color: white; }
+    .btn-card.github-btn:hover { background: var(--primary-hover); }
+
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .count-badge {
+      background: var(--primary);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
     }
 
     /* ─── HEADER ─── */
@@ -110,66 +202,82 @@
 
     /* ─── MAIN LAYOUT ─── */
     .app-body {
-      max-width: 1440px;
+      max-width: 1600px; /* Tăng chiều rộng tối đa */
       margin: 0 auto;
       padding: 20px;
-      display: flex;
-      flex-direction: column;
+      display: grid; /* Sử dụng grid cho layout chính */
+      grid-template-columns: 1fr; /* Mặc định 1 cột, sẽ điều chỉnh cho desktop */
       gap: 20px;
     }
 
     .dashboard-grid {
       display: grid;
-      grid-template-columns: 300px 1fr 300px;
+      grid-template-columns: 320px 1fr 320px; /* Tăng nhẹ chiều rộng 2 cột bên */
       gap: 20px;
-      min-height: 500px;
+      min-height: 600px; /* Tăng chiều cao tối thiểu */
     }
 
     /* ─── INDEPENDENT COLUMNS ─── */
     .dashboard-grid > .panel {
+      height: 600px; /* Chiều cao cố định để scroll mượt */
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-content {
+      flex: 1;
       overflow-y: auto;
-      max-height: 600px;
+      padding: 16px;
     }
 
     /* ─── BOTTOM 3-COLUMN GRID ─── */
     .bottom-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: repeat(3, 1fr);
       gap: 20px;
     }
 
     .bottom-grid > .bottom-panel {
       display: flex;
       flex-direction: column;
-      max-height: 450px;
+      height: 450px;
     }
 
     .bottom-grid > .bottom-panel > .card-scroll,
-    .bottom-grid > .bottom-panel > .panel-table-wrap {
+    .bottom-grid > .bottom-panel > .panel-table-wrap { flex: 1; min-height: 0;
       flex: 1;
       overflow-y: auto;
       overflow-x: hidden;
     }
 
     .bottom-grid > .bottom-panel > .card-scroll {
-      flex-direction: column;
+      
       gap: 10px;
     }
 
     /* ─── BOUNTY TABLE ─── */
     .panel-table-wrap {
-      padding: 0;
+      flex: 1;
       overflow-y: auto;
+      min-height: 0;
+      padding: 0;
     }
 
-    .panel-table-wrap::-webkit-scrollbar { width: 4px; }
+    .panel-table-wrap::-webkit-scrollbar { width: 6px; }
     .panel-table-wrap::-webkit-scrollbar-track { background: transparent; }
-    .panel-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .panel-table-wrap::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
 
     .bounty-table {
       width: 100%;
-      border-collapse: collapse;
+      border-collapse: separate;
+      border-spacing: 0;
       font-size: 12px;
+    }
+    .bounty-table thead th {
+      position: sticky;
+      top: 0;
+      background: #252526;
+      z-index: 10;
     }
 
     .bounty-table th {
@@ -255,7 +363,7 @@
       border-radius: var(--radius);
       border: 1px solid var(--border);
       display: flex;
-      flex-direction: column;
+      
       overflow: hidden;
       box-shadow: var(--shadow-sm);
       transition: box-shadow var(--transition);
@@ -533,21 +641,37 @@
 
     .card-scroll {
       padding: 14px 18px;
-      display: flex;
-      gap: 14px;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      max-height: 400px;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
-    .card-scroll::-webkit-scrollbar { height: 4px; }
+    .card-scroll::-webkit-scrollbar { width: 6px; }
     .card-scroll::-webkit-scrollbar-track { background: transparent; }
-    .card-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .card-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
     /* ─── BOUNTY / CONTEST CARDS ─── */
     .card {
-      flex: 0 0 260px;
-      padding: 14px;
+      padding: 16px;
       border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 180px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
       border: 1px solid var(--border);
       background: var(--surface);
       position: relative;
@@ -683,7 +807,7 @@
       font-size: 13px;
       width: 100%;
       display: flex;
-      flex-direction: column;
+      
       align-items: center;
       gap: 6px;
     }
@@ -903,7 +1027,7 @@
     </div>
 
     <!-- SUBMITTED BOUNTIES TRACKING -->
-    <div class="bottom-panel" style="grid-column: 1 / -1;">
+    <div class="bottom-panel" style="grid-column: 1 / -1; max-height: 500px; display: flex; ">
       <div class="bottom-panel-header">
         <div class="title-group">
           <h3>📊 Theo Dõi Bounty Đã Nộp</h3>
@@ -919,7 +1043,7 @@
     </div>
 
     <!-- FEEDBACK TRACKING PANEL -->
-    <div class="bottom-panel" style="grid-column: 1 / -1;">
+    <div class="bottom-panel" style="grid-column: 1 / -1; max-height: 450px; display: flex; ">
       <div class="bottom-panel-header">
         <div class="title-group">
           <h3>📬 Theo Dõi Phản Hồi GitHub</h3>
@@ -931,6 +1055,26 @@
       </div>
       <div class="panel-table-wrap" id="feedbackPanel">
         <div class="card-empty"><span class="spinner"></span> Đang tải...</div>
+      </div>
+    </div>
+
+    <!-- SYSTEM LOG PANEL -->
+    <div class="bottom-panel" style="grid-column: 1 / -1; background: #1e1e1e; border: 1px solid #333; box-shadow: 0 8px 32px rgba(0,0,0,0.4); margin-top: 10px;">
+      <div class="bottom-panel-header" style="border-bottom: 1px solid #333; background: #252526;">
+        <div class="title-group">
+          <h3 style="color: #cccccc; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 18px;">💻</span>
+            <span>Logs Hệ Thống (Real-time Console)</span>
+          </h3>
+        </div>
+        <div class="actions">
+          <button class="btn-sm" onclick="clearLogs()" style="background: transparent; color: #aaa; border: 1px solid #444; font-size: 10px;">
+            🗑️ Xóa log
+          </button>
+        </div>
+      </div>
+      <div id="systemLogs" style="height: 250px; overflow-y: auto; padding: 12px; font-family: 'Consolas', 'Monaco', 'Courier New', monospace; font-size: 12px; line-height: 1.5; color: #d4d4d4; background: #1e1e1e;">
+        <div style="color: #6a9955;">// Hệ thống đã sẵn sàng. Đang lắng nghe các request...</div>
       </div>
     </div>
 
@@ -999,7 +1143,7 @@
       : `${window.location.protocol}//${window.location.host}/api`;
 
     const WS_BASE = window.location.hostname === 'localhost'
-      ? 'ws://localhost:3001'
+      ? `ws://localhost:3002` /* Cố định 3002 cho WebSocket local */
       : `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
     let selectedJob = null;
@@ -1008,6 +1152,52 @@
     let newMessagesCount = 0;
     let ws = null;
     let jobFilter = 'all';
+
+    function appendLog(data) {
+      const logContainer = document.getElementById('systemLogs');
+      const entry = document.createElement('div');
+      const time = new Date().toLocaleTimeString('vi-VN');
+      let logContent = ``;
+      let color = '#d4d4d4'; // Default color
+
+      switch (data.type) {
+        case 'NEW_JOB':
+        case 'NEW_CONTEST':
+        case 'NEW_GITHUB_BOUNTY':
+        case 'NEW_GITCOIN_BOUNTY':
+        case 'NEW_ALGORA_BOUNTY':
+          logContent = `Tìm thấy bounty mới: ${data.title || data.bounty?.title || 'N/A'}`; color = '#9cdcfe'; break;
+        case 'AUTOWORK_UPDATE':
+          logContent = `Autowork: ${data.title || data.job?.title || 'N/A'} - ${data.result?.status || data.status || 'processing'}`; color = '#c586c0'; break;
+        case 'AUTOWORK_BATCH_STARTED':
+          logContent = `Bắt đầu xử lý hàng loạt ${data.count} bounty`; color = '#6a9955'; break;
+        case 'FEEDBACK_RECEIVED':
+          logContent = `Phản hồi mới từ GitHub: ${data.repo} #${data.issue}`; color = '#f8c555'; break;
+        case 'PR_MERGED':
+          logContent = `🎉 PR đã được merge: ${data.repo} #${data.prNumber}`; color = '#22c55e'; break;
+        case 'PR_REJECTED':
+          logContent = `❌ PR bị từ chối: ${data.repo} #${data.prNumber}`; color = '#ef4444'; break;
+        case 'AUTO_DEBUG_UPDATE':
+          logContent = `Debug Cycle: ${data.cycleResult.errorsFound} lỗi, ${data.cycleResult.fixesApplied} sửa, ${data.cycleResult.errorsRemaining} còn lại`; color = '#b5cea8'; break;
+        case 'AUTO_DEBUG_STARTED':
+          logContent = `Auto-Debug đã bắt đầu (max ${data.maxCycles} cycles)`; color = '#6a9955'; break;
+        case 'AUTO_DEBUG_STOPPED':
+          logContent = `Auto-Debug đã dừng: ${data.errorsFixed} lỗi đã sửa`; color = '#d4d4d4'; break;
+        case 'SCAN_COMPLETE':
+          logContent = `Quét xong: ${data.results.new} việc mới`; color = '#6a9955'; break;
+        default:
+          logContent = data.message || JSON.stringify(data);
+          if (logContent.length > 200) logContent = logContent.substring(0, 197) + '...';
+          break;
+      }
+      entry.innerHTML = `<span style="color:#569cd6">[${time}]</span> <span style="color:${color}">${logContent}</span>`;
+      logContainer.appendChild(entry);
+      logContainer.scrollTop = logContainer.scrollHeight;
+    }
+
+    function clearLogs() {
+      document.getElementById('systemLogs').innerHTML = '<div style="color: #6a9955;">// Logs đã xóa. Đang đợi dữ liệu mới...</div>';
+    }
 
     // WEBSOCKET
     function connectWebSocket() {
@@ -1021,6 +1211,9 @@
     }
 
     function handleWebSocketMessage(data) {
+      // Ghi log vào Console Panel
+      appendLog(data);
+
       if (data.type === 'NEW_JOB') {
         newJobsCount++;
         showNotif(`Công việc mới: ${data.job.title}`, 'info');
@@ -1134,7 +1327,7 @@
     // LOAD JOBS
     async function loadJobs() {
       try {
-        const res = await fetch(`${API_BASE}/jobs?limit=100`);
+        const res = await fetch(`${API_BASE}/jobs?limit=100&status=processed`); /* Lọc job đã được xử lý */
         const data = await res.json();
         if (data.success && data.jobs.length > 0) { jobs = data.jobs; renderJobs(); updateStats(); }
       } catch (e) { /* silent */ }
@@ -1522,33 +1715,39 @@
 
       if (bounties.length === 0) { el.innerHTML = '<div class="card-empty">Chưa tìm thấy bounty nào</div>'; badge.style.display = 'none'; btn.disabled = true; return; }
 
-      badge.textContent = bounties.length;
-      badge.style.display = '';
-      const ready = bounties.filter(b => b.status !== 'SUBMITTED');
-      btn.disabled = ready.length === 0;
+      const readyBounties = bounties.filter(b => b.budget > 0 && b.status !== 'SUBMITTED'); /* Chỉ hiển thị bounty có budget > 0 và chưa nộp */
 
-      el.innerHTML = bounties.map(b => {
-        const submitted = b.status === 'SUBMITTED';
-        const platform = b.bounty_platform || 'github';
-        const platformLabels = { github: 'GitHub', gitcoin: 'Gitcoin', algora: 'Algora' };
-        const score = b.analysis?.score || 0;
+      badge.textContent = readyBounties.length;
+      badge.style.display = '';
+      btn.disabled = readyBounties.length === 0;
+
+      el.innerHTML = readyBounties.map(b => {
+        const submitted = b.status === 'SUBMITTED' || b.status === 'SIMULATED_SUBMITTED';
+        const analysisObj = typeof b.analysis === 'string' ? JSON.parse(b.analysis || '{}') : (b.analysis || {});
+        const isAuto = b.status === 'AUTO_APPROVED_LOW_BUDGET' || analysisObj.autoAccepted;
+        const platform = b.bounty_platform || b.platform || 'github';
+        const platformLabels = { github: 'GitHub', gitcoin: 'Gitcoin', algora: 'Algora', freelancer: 'Freelancer' };
+        const score = analysisObj.score || 0;
         const scoreClass = score >= 70 ? 'high' : score >= 40 ? 'mid' : 'low';
 
         return `
-          <div class="card ${submitted ? 'submitted' : ''}">
+          <div class="card ${submitted ? 'submitted' : ''} ${isAuto ? 'auto-active' : ''}">
             <div class="card-platform"><span class="platform-dot ${platform}"></span> ${platformLabels[platform] || 'GitHub'}</div>
-            ${submitted ? '<span class="card-status-badge submitted">Đã Nộp</span>' : '<span class="card-status-badge new">Mới</span>'}
+            ${submitted ? '<span class="card-status-badge submitted">Đã Nộp</span>' :
+              isAuto ? '<span class="card-status-badge auto">🤖 Tự Động</span>' :
+              '<span class="card-status-badge new">Mới</span>'}
             <div class="card-title">${b.title}</div>
             <div class="card-meta">
-              ${b.github_repo ? `<span>${b.github_repo}</span>` : ''}
+              ${b.github_repo ? `<span>${b.github_repo}</span>` : b.client_name ? `<span>👤 ${b.client_name}</span>` : ''}
             </div>
-            <div class="card-amount ${b.budget > 0 ? '' : 'zero'}">${b.budget > 0 ? '$' + b.budget : 'Chưa xác định'}</div>
+            <div class="card-amount ${b.budget > 0 ? '' : 'zero'}">${b.budget > 0 ? `$${b.budget}` : 'Chưa xác định'}</div>
             <div class="card-score">
               <div class="score-bar"><div class="score-fill ${scoreClass}" style="width:${score}%"></div></div>
               <span class="score-label">${score}/100</span>
             </div>
-            <button class="btn-card ${submitted ? 'submitted-btn' : 'github-btn'}" onclick="${submitted ? '' : `submitBounty('${b.id}')`}" ${submitted ? 'disabled' : ''}>
-              ${submitted ? 'Đã Nộp' : 'Nộp'}
+            <button class="btn-card ${submitted ? 'submitted-btn' : isAuto ? 'auto-btn' : 'github-btn'}"
+              onclick="${submitted || isAuto ? '' : `submitBounty('${b.id}')`}" ${submitted || isAuto ? 'disabled' : ''}>
+              ${submitted ? 'Đã Nộp' : isAuto ? 'Đang Xử Lý...' : 'Nộp'}
             </button>
           </div>`;
       }).join('');
@@ -1565,13 +1764,43 @@
     }
 
     async function submitAllBounties() {
-      if (!confirm('Nộp tất cả bounties?')) return;
+      // Find all bounty IDs from the DOM that haven't been submitted yet
+      const bountyIds = Array.from(document.querySelectorAll('#githubList .btn-card:not(.submitted-btn)'))
+        .map(btn => {
+          const match = btn.getAttribute('onclick').match(/submitBounty\('(.+?)'\)/);
+          return match ? match[1] : null;
+        })
+        .filter(Boolean);
+
+      if (bountyIds.length === 0) {
+        showNotif('Không có bounty nào hợp lệ để nộp', 'warning');
+        return;
+      }
+
+      if (!confirm(`Nộp ${bountyIds.length} bounties mới nhất?`)) return;
+
+      const btn = document.getElementById('btnSubmitAllBounties');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" style="border-color: #fff; border-top-color: transparent;"></span> Đang nộp...';
+
       try {
-        const res = await fetch(`${API_BASE}/github/batch/auto-submit`, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+        const res = await fetch(`${API_BASE}/github/batch/auto-submit`, { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bountyIds })
+        });
         const data = await res.json();
-        if (data.success) { showNotif(`Đã nộp: ${data.submitted}/${data.total}`, 'success'); loadGithubBounties(); }
-        else { showNotif(data.error, 'error'); }
-      } catch (e) { showNotif(e.message, 'error'); }
+        if (data.success) { 
+          showNotif(`Đã nộp thành công: ${data.summary?.successful || 0}/${data.summary?.total || 0}`, 'success'); 
+          loadGithubBounties(); 
+        }
+        else { showNotif(data.error || data.message, 'error'); }
+      } catch (e) { 
+        showNotif(e.message, 'error'); 
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Nộp tất cả';
+      }
     }
 
     // QUALIFIED BOUNTIES - Chỉ hiển thị bounty có tiền + phù hợp chuyên môn
@@ -1663,7 +1892,7 @@
           </thead>
           <tbody>
             ${submitted.map(j => {
-              const submittedDate = new Date(j.submitted_at).toLocaleDateString('vi-VN');
+              const submittedDate = j.submitted_at ? new Date(j.submitted_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'Đang xử lý';
               const status = j.status === 'COMPLETED' ? 'Hoàn thành' : j.status === 'ACCEPTED' ? 'Được chấp nhận' : 'Đang chờ';
               const statusColor = j.status === 'COMPLETED' ? 'paid' : j.status === 'ACCEPTED' ? 'submitted' : 'pending';
               return `
@@ -1777,41 +2006,45 @@
           </div>
 
           <!-- Submissions Table -->
-          <table class="bounty-table">
-            <thead>
-              <tr>
-                <th>Tiêu Đề</th>
-                <th>Nền Tảng</th>
-                <th>Tiền</th>
-                <th>Trạng Thái</th>
-                <th>Thanh Toán</th>
-                <th>Ngày Nộp</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${submissions.map(s => {
-                const submittedDate = new Date(s.submitted_at).toLocaleDateString('vi-VN');
-                const statusColor = s.status === 'COMPLETED' ? 'paid' : s.status === 'IN_PROGRESS' ? 'submitted' : 'pending';
-                const statusText = s.status === 'COMPLETED' ? 'Hoàn thành' : s.status === 'IN_PROGRESS' ? 'Đang xử lý' : 'Chờ phản hồi';
-                const paymentColor = s.payment_status === 'paid' ? 'paid' : s.payment_status === 'in_progress' ? 'submitted' : 'pending';
-                const paymentText = s.payment_status === 'paid' ? 'Đã thanh toán' : s.payment_status === 'in_progress' ? 'Đang xử lý' : 'Chờ xử lý';
-                const platform = s.platform || 'github';
-                return `
-                  <tr>
-                    <td class="title-cell" title="${s.title}">${s.title}</td>
-                    <td>
-                      <span class="status-dot" style="background: ${platform === 'algora' ? '#8b5cf6' : platform === 'gitcoin' ? '#3b82f6' : '#24292e'}"></span>
-                      ${platform.toUpperCase()}
-                    </td>
-                    <td class="amount-cell"><strong>$${s.budget || 0}</strong></td>
-                    <td><span class="status-dot ${statusColor}"></span> ${statusText}</td>
-                    <td><span class="status-dot ${paymentColor}"></span> ${paymentText}</td>
-                    <td>${submittedDate}</td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
+          <div style="overflow-y: auto; ">
+            <table class="bounty-table">
+              <thead>
+                <tr>
+                  <th>Tiêu Đề</th>
+                  <th>Nền Tảng</th>
+                  <th>Tiền</th>
+                  <th>Trạng Thái</th>
+                  <th>Thanh Toán</th>
+                  <th>Ngày Nộp</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${submissions.map(s => {
+                  const submittedDate = s.submitted_at ? new Date(s.submitted_at).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'Đang xử lý';
+                  const statusColor = s.status === 'COMPLETED' ? 'paid' : s.status === 'IN_PROGRESS' ? 'submitted' : 'pending';
+                  const statusText = s.status === 'COMPLETED' ? 'Hoàn thành' : s.status === 'IN_PROGRESS' ? 'Đang xử lý' : 'Chờ phản hồi';
+                  const paymentColor = s.payment_status === 'paid' ? 'paid' : s.payment_status === 'in_progress' ? 'submitted' : 'pending';
+                  const paymentText = s.payment_status === 'paid' ? 'Đã thanh toán' : s.payment_status === 'in_progress' ? 'Đang xử lý' : 'Chờ xử lý';
+                  const platform = s.platform || 'github';
+                  return `
+                    <tr>
+                      <td class="title-cell" title="${s.title}">
+                        <a href="${s.project_url}" target="_blank" style="color: var(--primary); text-decoration: none;">${s.title}</a>
+                      </td>
+                      <td>
+                        <span class="status-dot" style="background: ${platform === 'algora' ? '#8b5cf6' : platform === 'gitcoin' ? '#3b82f6' : '#24292e'}"></span>
+                        ${platform.toUpperCase()}
+                      </td>
+                      <td class="amount-cell"><strong>$${s.budget || 0}</strong></td>
+                      <td><span class="status-dot ${statusColor}"></span> ${statusText}</td>
+                      <td><span class="status-dot ${paymentColor}"></span> ${paymentText}</td>
+                      <td>${submittedDate}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
         </div>
       `;
       el.innerHTML = html;
@@ -2218,7 +2451,7 @@
         // Active jobs section
         if (activeJobs > 0 && jobs && jobs.length > 0) {
           html += `<h4 style="color: white; margin-bottom: 12px; font-size: 14px;">⚡ Công Việc Đang Xử Lý</h4>`;
-          html += `<div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px;">`;
+          html += `<div style="display: flex;  gap: 8px; margin-bottom: 20px;">`;
           jobs.forEach(job => {
             const statusMap = {
               'validating': { emoji: '🔍', label: 'Xác thực', color: '#60a5fa' },
@@ -2275,7 +2508,7 @@
         // History section
         if (history.length > 0) {
           html += `<h4 style="color: white; margin-bottom: 12px; font-size: 14px;">📋 Lịch Sử Xử Lý (gần nhất)</h4>`;
-          html += `<div style="overflow-x: auto; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);">`;
+          html += `<div style="overflow-y: auto; max-height: 400px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.15);">`;
           html += `
             <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
               <thead>

@@ -345,6 +345,12 @@ class JobMonitor {
       return;
     }
 
+    // Ưu tiên xử lý job trước khi quét mới.
+    if (global.autoworkPipeline && global.autoworkPipeline.getStatus().activeJobs > 0) {
+      console.log('⏭️ Pipeline is busy processing jobs. Skipping monitoring cycle to prioritize execution.');
+      return;
+    }
+
     this.isMonitoring = true;
     this.checkCount++;
 

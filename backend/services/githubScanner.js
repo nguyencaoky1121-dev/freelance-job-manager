@@ -86,6 +86,25 @@ class GitHubScanner {
             };
 
             const jobId = `github_${issue.id}_${Date.now()}`;
+            const bountyBudget = issue.bountyAmount || 0;
+
+            if (bountyBudget <= 0) {
+              results.skipped++;
+              continue; /* Bỏ qua hoàn toàn bounty không xác định được ngân sách ngay từ bước quét */
+            }
+
+            let status = 'SCANNED';
+            let autoTrigger = false;
+
+            // Tự động phân tích và sẵn sàng nộp nếu bounty dưới $100
+            if (bountyBudget <= 100) {
+              status = 'ANALYZED';
+              autoTrigger = true;
+              console.log(`🤖 Auto-trigger enabled for low-budget GitHub bounty: ${issue.title} ($${bountyBudget})`);
+              if (global.sysLog) {
+                global.sysLog(`🤖 Tự động phát hiện Bounty GitHub phù hợp (Dưới $100): ${issue.title} ($${bountyBudget}) - Xếp hàng chờ xử lý tự động`, 'AUTOWORK_INFO');
+              }
+            }
 
             await run(
               `INSERT INTO jobs (id, platform, external_id, title, description, budget, currency, skills, status, analysis, client_name, client_id, project_url, created_at)
@@ -96,10 +115,10 @@ class GitHubScanner {
                 String(issue.id),
                 issue.title,
                 issue.description,
-                issue.bountyAmount || 0,
+                bountyBudget,
                 'USD',
                 JSON.stringify(issue.labels),
-                'SCANNED',
+                status,
                 JSON.stringify(analysis),
                 issue.owner || 'Unknown',
                 String(issue.id),
@@ -122,8 +141,23 @@ class GitHubScanner {
                   repo: issue.repo,
                   url: issue.url,
                   analysis,
+                  status: status
                 },
               });
+            }
+
+            // Kích hoạt xử lý tự động ngầm nếu thỏa mãn điều kiện dưới $100
+            if (autoTrigger && global.autoworkPipeline && typeof global.autoworkPipeline.postAttemptOnly === 'function') {
+               // Chạy bất đồng bộ, không chờ đợi kết quả để tránh chặn quá trình quét
+               setTimeout(() => {
+                 console.log(`⚙️ Tự động kích hoạt pipeline xử lý One-Shot cho job: ${jobId}`);
+                 if (global.sysLog) {
+                   global.sysLog(`🚀 Tự động nộp bài và viết code cho Bounty dưới $100: ${issue.title}`, 'AUTOWORK_START');
+                 }
+                 global.autoworkPipeline.postAttemptOnly(jobId).catch(err => {
+                   console.error(`❌ Auto-trigger failed for ${jobId}: ${err.message}`);
+                 });
+               }, 1000); // Đợi 1 giây đảm bảo database đã insert xong
             }
 
             console.log(`🏆 New GitHub bounty found: ${issue.title} ($${issue.bountyAmount || 0})`);
@@ -174,6 +208,23 @@ class GitHubScanner {
             };
 
             const jobId = `gitcoin_${bounty.id}_${Date.now()}`;
+            const bountyBudget = bounty.bountyAmount || 0;
+
+            if (bountyBudget <= 0) {
+              results.skipped++;
+              continue;
+            }
+
+            let status = 'SCANNED';
+            let autoTrigger = false;
+
+            if (bountyBudget <= 100) {
+              status = 'ANALYZED';
+              autoTrigger = true;
+              if (global.sysLog) {
+                global.sysLog(`🤖 Tự động phát hiện Bounty Gitcoin (Dưới $100): ${bounty.title} ($${bountyBudget})`, 'AUTOWORK_INFO');
+              }
+            }
 
             await run(
               `INSERT INTO jobs (id, platform, external_id, title, description, budget, currency, status, analysis, client_name, project_url, created_at)
@@ -184,9 +235,9 @@ class GitHubScanner {
                 String(bounty.id),
                 bounty.title,
                 bounty.description,
-                bounty.bountyAmount || 0,
+                bountyBudget,
                 'USD',
-                'SCANNED',
+                status,
                 JSON.stringify(analysis),
                 'Gitcoin',
                 bounty.url,
@@ -205,8 +256,20 @@ class GitHubScanner {
                   budget: bounty.bountyAmount || 0,
                   url: bounty.url,
                   analysis,
+                  status: status
                 },
               });
+            }
+
+            if (autoTrigger && global.autoworkPipeline && typeof global.autoworkPipeline.postAttemptOnly === 'function') {
+               setTimeout(() => {
+                 if (global.sysLog) {
+                   global.sysLog(`🚀 Tự động nộp bài cho Bounty Gitcoin: ${bounty.title}`, 'AUTOWORK_START');
+                 }
+                 global.autoworkPipeline.postAttemptOnly(jobId).catch(err => {
+                   console.error(`❌ Auto-trigger failed for ${jobId}: ${err.message}`);
+                 });
+               }, 1500);
             }
 
             console.log(`🏆 New Gitcoin bounty found: ${bounty.title} ($${bounty.bountyAmount || 0})`);
@@ -256,6 +319,23 @@ class GitHubScanner {
             };
 
             const jobId = `algora_${bounty.id}_${Date.now()}`;
+            const bountyBudget = bounty.bountyAmount || 0;
+
+            if (bountyBudget <= 0) {
+              results.skipped++;
+              continue;
+            }
+
+            let status = 'SCANNED';
+            let autoTrigger = false;
+
+            if (bountyBudget <= 100) {
+              status = 'ANALYZED';
+              autoTrigger = true;
+              if (global.sysLog) {
+                global.sysLog(`🤖 Tự động phát hiện Bounty Algora (Dưới $100): ${bounty.title} ($${bountyBudget})`, 'AUTOWORK_INFO');
+              }
+            }
 
             await run(
               `INSERT INTO jobs (id, platform, external_id, title, description, budget, currency, status, analysis, client_name, project_url, created_at)
@@ -266,9 +346,9 @@ class GitHubScanner {
                 String(bounty.id),
                 bounty.title,
                 bounty.description,
-                bounty.bountyAmount || 0,
+                bountyBudget,
                 'USD',
-                'SCANNED',
+                status,
                 JSON.stringify(analysis),
                 'Algora',
                 bounty.url,
@@ -287,8 +367,20 @@ class GitHubScanner {
                   budget: bounty.bountyAmount || 0,
                   url: bounty.url,
                   analysis,
+                  status: status
                 },
               });
+            }
+
+            if (autoTrigger && global.autoworkPipeline && typeof global.autoworkPipeline.postAttemptOnly === 'function') {
+               setTimeout(() => {
+                 if (global.sysLog) {
+                   global.sysLog(`🚀 Tự động nộp bài cho Bounty Algora: ${bounty.title}`, 'AUTOWORK_START');
+                 }
+                 global.autoworkPipeline.postAttemptOnly(jobId).catch(err => {
+                   console.error(`❌ Auto-trigger failed for ${jobId}: ${err.message}`);
+                 });
+               }, 2000);
             }
 
             console.log(`🏆 New Algora bounty found: ${bounty.title} ($${bounty.bountyAmount || 0})`);

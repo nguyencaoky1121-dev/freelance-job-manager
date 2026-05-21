@@ -100,7 +100,30 @@
       "Bash(node -e \"const {all} = require\\('./backend/db/database'\\); \\(async\\(\\)=>{ const stats = await all\\(\\\\\"SELECT status, COUNT\\(*\\) as count FROM jobs GROUP BY status ORDER BY count DESC\\\\\"\\); console.log\\('Job Status Distribution:'\\); stats.forEach\\(s => console.log\\('  ' + s.status + ': ' + s.count\\)\\); }\\)\\(\\).catch\\(e=>console.error\\(e.message\\)\\)\")",
       "Bash(git checkout *)",
       "Bash(git merge *)",
-      "mcp__exa__web_search_exa"
+      "mcp__exa__web_search_exa",
+      "Bash(node backend/db/database.js)",
+      "Bash(node -e \"const db = require\\('better-sqlite3'\\)\\('backend/db/jobs.db'\\); console.log\\(db.prepare\\('PRAGMA table_info\\(jobs\\)'\\).all\\(\\)\\)\")",
+      "Bash(node -e \"const db = require\\('better-sqlite3'\\)\\('backend/db/jobs.db'\\); try { db.exec\\('ALTER TABLE jobs ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP'\\); console.log\\('Cột updated_at đã được thêm thành công'\\); } catch \\(e\\) { console.error\\('Lỗi khi thêm cột:', e.message\\); }\")",
+      "Bash(node -e 'const db = require\\('\\\\''better-sqlite3'\\\\''\\)\\('\\\\''backend/db/jobs.db'\\\\''\\); *)",
+      "Bash(node -e \"const db = require\\('better-sqlite3'\\)\\('backend/db/jobs.db'\\); const cols = db.prepare\\('PRAGMA table_info\\(jobs\\)'\\).all\\(\\); const col = cols.find\\(c => c.name === 'updated_at'\\); console.log\\(col ? 'Cột updated_at ĐÃ TỒN TẠI' : 'Cột updated_at CHƯA TỒN TẠI'\\)\")",
+      "Bash(ls \"D:\\\\thietke kiem tien\\\\\" 2>/dev/null || dir /B \"D:\\\\thietke kiem tien\" 2>NUL)",
+      "Bash(taskkill /F /PID 12028)",
+      "Bash(MSYS_NO_PATHCONV=1 taskkill /F /PID 12028)",
+      "Bash(lsof -ti:3002)",
+      "Bash(MSYS_NO_PATHCONV=1 taskkill /F /IM node.exe)",
+      "Bash(findstr :3000)",
+      "Bash(sed -i 's/overflow-x: auto;/overflow-y: auto; flex-direction: column;/g' \"D:\\\\thietke kiem tien\\\\public\\\\index.html\")",
+      "Bash(sed -i 's/flex-direction: column;//g' \"D:\\\\thietke kiem tien\\\\public\\\\index.html\")",
+      "Bash(sed -i 's/scroll-snap-type: x mandatory;//g' \"D:\\\\thietke kiem tien\\\\public\\\\index.html\")",
+      "Bash(findstr \":3000 :3002\")",
+      "Bash(taskkill /IM node.exe /F)",
+      "Bash(MSYS_NO_PATHCONV=1 taskkill //F //IM node.exe)",
+      "Bash(sqlite3 backend/db/jobs.db \"SELECT id, title, status, created_at, updated_at FROM jobs ORDER BY created_at DESC LIMIT 10;\")",
+      "Bash(node -e \"const { get } = require\\('./backend/db/database'\\); get\\('SELECT * FROM stats ORDER BY created_at DESC LIMIT 5'\\).then\\(console.log\\);\")",
+      "Bash(smartAutoWorkPipeline.js)",
+      "Bash(smartRequirementAnalyzer.js)",
+      "Bash(internalAutoWorkPipeline.js)",
+      "Bash(workExecutor.js)"
     ]
   }
 }

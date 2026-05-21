@@ -1,379 +1,129 @@
 const fs = require('fs');
 const path = require('path');
+const { GoogleGenAI } = require('@google/genai');
 
 class CodeGeneratorEngine {
-  constructor() {
-    this.templates = this.loadTemplates();
-  }
-
   loadTemplates() {
     return {
-      'react_component': `import React, { useState } from 'react';
-import styles from './{{componentName}}.module.css';
-
-export function {{ComponentName}}() {
-  const [state, setState] = useState(null);
-
-  const handleChange = (e) => {
-    setState(e.target.value);
-  };
-
-  return (
-    <div className={styles.container}>
-      <h1>{{ComponentName}}</h1>
-      {/* Component content */}
-    </div>
-  );
-}
-
-export default {{ComponentName}};`,
-
-      'react_component_test': `import { render, screen } from '@testing-library/react';
-import {{ComponentName}} from './{{componentName}}';
-
-describe('{{ComponentName}}', () => {
-  it('renders without crashing', () => {
-    render(<{{ComponentName}} />);
-    expect(screen.getByText('{{ComponentName}}')).toBeInTheDocument();
-  });
-
-  it('handles user interactions', () => {
-    render(<{{ComponentName}} />);
-    // Add interaction tests
-  });
-});`,
-
-      'express_api': `const express = require('express');
-const router = express.Router();
-
-/**
- * GET /api/{{resource}}
- */
-router.get('/', async (req, res) => {
-  try {
-    // TODO: Implement GET logic
-    res.json({ success: true, data: [] });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * POST /api/{{resource}}
- */
-router.post('/', async (req, res) => {
-  try {
-    // TODO: Implement POST logic
-    res.json({ success: true, message: 'Created' });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * GET /api/{{resource}}/:id
- */
-router.get('/:id', async (req, res) => {
-  try {
-    // TODO: Implement GET by ID logic
-    res.json({ success: true, data: null });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * PUT /api/{{resource}}/:id
- */
-router.put('/:id', async (req, res) => {
-  try {
-    // TODO: Implement PUT logic
-    res.json({ success: true, message: 'Updated' });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-/**
- * DELETE /api/{{resource}}/:id
- */
-router.delete('/:id', async (req, res) => {
-  try {
-    // TODO: Implement DELETE logic
-    res.json({ success: true, message: 'Deleted' });
-  } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-
-module.exports = router;`,
-
-      'express_api_test': `const request = require('supertest');
-const app = require('../app');
-
-describe('{{Resource}} API', () => {
-  it('GET /api/{{resource}} returns list', async () => {
-    const res = await request(app).get('/api/{{resource}}');
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(Array.isArray(res.body.data)).toBe(true);
-  });
-
-  it('POST /api/{{resource}} creates item', async () => {
-    const res = await request(app)
-      .post('/api/{{resource}}')
-      .send({ /* test data */ });
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-  });
-
-  it('GET /api/{{resource}}/:id returns item', async () => {
-    const res = await request(app).get('/api/{{resource}}/1');
-    expect(res.status).toBe(200);
-  });
-
-  it('PUT /api/{{resource}}/:id updates item', async () => {
-    const res = await request(app)
-      .put('/api/{{resource}}/1')
-      .send({ /* updated data */ });
-    expect(res.status).toBe(200);
-  });
-
-  it('DELETE /api/{{resource}}/:id deletes item', async () => {
-    const res = await request(app).delete('/api/{{resource}}/1');
-    expect(res.status).toBe(200);
-  });
-});`,
-
-      'database_model': `const { run, all, get } = require('../db/database');
-
-class {{ModelName}} {
-  static async create(data) {
-    try {
-      const result = await run(
-        'INSERT INTO {{table}} ({{columns}}) VALUES ({{placeholders}})',
-        [{{values}}]
-      );
-      return { success: true, id: result.id };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  }
-
-  static async findAll() {
-    try {
-      const rows = await all('SELECT * FROM {{table}}');
-      return { success: true, data: rows };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  }
-
-  static async findById(id) {
-    try {
-      const row = await get('SELECT * FROM {{table}} WHERE id = ?', [id]);
-      return { success: true, data: row };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  }
-
-  static async update(id, data) {
-    try {
-      await run(
-        'UPDATE {{table}} SET {{updates}} WHERE id = ?',
-        [{{values}}, id]
-      );
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  }
-
-  static async delete(id) {
-    try {
-      await run('DELETE FROM {{table}} WHERE id = ?', [id]);
-      return { success: true };
-    } catch (err) {
-      return { success: false, error: err.message };
-    }
-  }
-}
-
-module.exports = {{ModelName}};`,
-
-      'bug_fix_template': `// Bug Fix: {{bugDescription}}
-// Issue: {{issue}}
-// Solution: {{solution}}
-
-// BEFORE (buggy code):
-// {{beforeCode}}
-
-// AFTER (fixed code):
-{{fixedCode}}
-
-// Test to verify fix:
-{{testCode}}`,
-
-      'refactor_template': `// Refactoring: {{refactorDescription}}
-// Improvements:
-// - {{improvement1}}
-// - {{improvement2}}
-// - {{improvement3}}
-
-// BEFORE (old code):
-// {{beforeCode}}
-
-// AFTER (refactored code):
-{{refactoredCode}}`,
+      'react_component': `import React, { useState } from 'react';\n\nexport function {{ComponentName}}() {\n  return (\n    <div>\n      <h1>{{ComponentName}}</h1>\n      {/* TODO: Implement logic */}\n    </div>\n  );\n}\nexport default {{ComponentName}};`,
+      'express_api': `const express = require('express');\nconst router = express.Router();\n\nrouter.get('/', async (req, res) => {\n  res.json({ success: true });\n});\n\nmodule.exports = router;`,
+      'generic_solution': `// Solution: {{mainObjective}}\n// TODO: Implement actual logic based on approach: \n// {{approach}}`
     };
   }
 
+  constructor() {
+    this.templates = this.loadTemplates();
+    this.apiKeys = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.split(',').map(k => k.trim()) : [];
+    this.currentKeyIndex = 0;
+    this.aiInstances = this.apiKeys.map(key => new GoogleGenAI({ apiKey: key }));
+  }
+
   /**
-   * Generate code based on analysis
+   * Get the next available AI instance (Rotation)
    */
-  generateCode(analysis, issueDescription) {
-    const { taskType, techStack, requiredSkills } = analysis;
+  getAI() {
+    if (this.aiInstances.length === 0) return null;
+    const instance = this.aiInstances[this.currentKeyIndex];
+    // Rotate index for next call
+    this.currentKeyIndex = (this.currentKeyIndex + 1) % this.aiInstances.length;
+    return instance;
+  }
 
+  /**
+   * AI-Powered Code Generation
+   */
+  async generateCodeWithAI(analysis, issueDescription) {
+    const aiInstance = this.getAI();
+    if (!aiInstance) {
+      console.warn('⚠️ GEMINI_API_KEY is missing. Using static templates as fallback.');
+      return this.generateCodeFallback(analysis, issueDescription);
+    }
+
+    console.log(`🤖 Generating code using Gemini AI (Key #${this.currentKeyIndex + 1}/${this.apiKeys.length})...`);
+    try {
+      const prompt = `
+      You are an expert Senior Software Engineer participating in a GitHub bounty/freelance job.
+      Your task is to write high-quality, production-ready code to solve the following issue.
+
+      ISSUE TITLE: ${analysis.mainObjective}
+      TECH STACK: ${analysis.techStack.join(', ')}
+      TASK TYPE: ${analysis.taskType}
+
+      ISSUE DESCRIPTION:
+      ${issueDescription}
+
+      REQUIREMENTS:
+      1. Write REAL, WORKING code. Do NOT use "// TODO: implement this".
+      2. If it's a bug fix, provide the fixed code.
+      3. If it's a new feature, provide the complete implementation.
+      4. Output ONLY the raw code. No markdown code blocks like \`\`\`javascript. No explanations.
+      5. Add a short comment at the top explaining what was fixed/added.
+
+      Write the code now:
+      `;
+
+      // Use correct SDK pattern for @google/genai
+      const model = aiInstance.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      let generatedCode = response.text();
+
+      // Clean up markdown block if the AI ignored the instruction
+      generatedCode = generatedCode.replace(/^```[a-zA-Z]*\n/, '').replace(/\n```$/, '');
+
+      let fileName = 'solution.js';
+      if (analysis.techStack.includes('frontend')) fileName = 'Component.jsx';
+      else if (analysis.techStack.includes('python')) fileName = 'solution.py';
+      else if (analysis.techStack.includes('rust')) fileName = 'main.rs';
+      else if (analysis.techStack.includes('go')) fileName = 'main.go';
+
+      return {
+        code: generatedCode,
+        fileName: fileName,
+        language: this.detectLanguage(fileName),
+        isAI: true
+      };
+
+    } catch (error) {
+      console.error('❌ AI Generation failed:', error.message);
+      console.log('🔄 Falling back to static templates...');
+      return this.generateCodeFallback(analysis, issueDescription);
+    }
+  }
+
+  /**
+   * Main entry point (Backward compatible)
+   */
+  async generateCode(analysis, issueDescription) {
+    // If it's an async call, we try AI
+    return await this.generateCodeWithAI(analysis, issueDescription);
+  }
+
+  /**
+   * Fallback using templates (Synchronous)
+   */
+  generateCodeFallback(analysis, issueDescription) {
     let code = '';
-    let fileName = '';
+    let fileName = 'solution.js';
 
-    // Determine what to generate based on task type and tech stack
-    if (taskType === 'bug_fix') {
-      code = this.generateBugFix(analysis, issueDescription);
-      fileName = 'bugfix.js';
-    } else if (taskType === 'feature') {
-      if (techStack.includes('frontend')) {
-        code = this.generateReactComponent(analysis);
-        fileName = 'Component.jsx';
-      } else if (techStack.includes('backend')) {
-        code = this.generateExpressAPI(analysis);
-        fileName = 'api.js';
-      } else {
-        code = this.generateFullStackFeature(analysis);
-        fileName = 'feature.js';
-      }
-    } else if (taskType === 'refactor') {
-      code = this.generateRefactoring(analysis, issueDescription);
-      fileName = 'refactored.js';
-    } else if (taskType === 'test') {
-      code = this.generateTests(analysis);
-      fileName = 'test.js';
+    if (analysis.taskType === 'feature' && analysis.techStack.includes('frontend')) {
+      code = this.templates.react_component.replace(/{{ComponentName}}/g, 'FeatureComponent');
+      fileName = 'Component.jsx';
+    } else if (analysis.taskType === 'feature' && analysis.techStack.includes('backend')) {
+      code = this.templates.express_api;
+      fileName = 'api.js';
     } else {
-      code = this.generateGenericSolution(analysis);
-      fileName = 'solution.js';
+      code = this.templates.generic_solution
+        .replace('{{mainObjective}}', analysis.mainObjective)
+        .replace('{{approach}}', analysis.suggestedApproach);
     }
 
     return {
       code,
       fileName,
       language: this.detectLanguage(fileName),
+      isAI: false
     };
-  }
-
-  generateReactComponent(analysis) {
-    let code = this.templates.react_component;
-    const componentName = this.toPascalCase(analysis.mainObjective.split(' ')[0]);
-
-    code = code.replace(/{{ComponentName}}/g, componentName);
-    code = code.replace(/{{componentName}}/g, this.toCamelCase(componentName));
-
-    return code;
-  }
-
-  generateExpressAPI(analysis) {
-    let code = this.templates.express_api;
-    const resource = this.extractResourceName(analysis.mainObjective);
-
-    code = code.replace(/{{resource}}/g, resource);
-    code = code.replace(/{{Resource}}/g, this.toPascalCase(resource));
-
-    return code;
-  }
-
-  generateBugFix(analysis, issueDescription) {
-    let code = this.templates.bug_fix_template;
-
-    code = code.replace('{{bugDescription}}', analysis.mainObjective);
-    code = code.replace('{{issue}}', issueDescription.substring(0, 100));
-    code = code.replace('{{solution}}', analysis.suggestedApproach.split('\n')[0]);
-    code = code.replace('{{beforeCode}}', '// Original buggy implementation');
-    code = code.replace('{{fixedCode}}', '// Fixed implementation\n// TODO: Implement fix');
-    code = code.replace('{{testCode}}', '// TODO: Add test to verify fix');
-
-    return code;
-  }
-
-  generateRefactoring(analysis, issueDescription) {
-    let code = this.templates.refactor_template;
-
-    code = code.replace('{{refactorDescription}}', analysis.mainObjective);
-    code = code.replace('{{improvement1}}', 'Improved code clarity');
-    code = code.replace('{{improvement2}}', 'Better error handling');
-    code = code.replace('{{improvement3}}', 'Enhanced performance');
-    code = code.replace('{{beforeCode}}', '// Original implementation');
-    code = code.replace('{{refactoredCode}}', '// Refactored implementation\n// TODO: Implement refactoring');
-
-    return code;
-  }
-
-  generateTests(analysis) {
-    if (analysis.techStack.includes('frontend')) {
-      return this.templates.react_component_test;
-    } else if (analysis.techStack.includes('backend')) {
-      return this.templates.express_api_test;
-    }
-
-    return `// Test suite for {{feature}}
-describe('{{Feature}}', () => {
-  it('should work correctly', () => {
-    // TODO: Add test
-  });
-});`;
-  }
-
-  generateFullStackFeature(analysis) {
-    return `// Full-stack feature: ${analysis.mainObjective}
-//
-// This feature includes:
-// - Frontend component
-// - Backend API
-// - Database model
-// - Tests
-
-// TODO: Implement full-stack feature
-// 1. Create React component
-// 2. Create Express API endpoints
-// 3. Create database model
-// 4. Add tests
-// 5. Integrate frontend with backend`;
-  }
-
-  generateGenericSolution(analysis) {
-    return `// Solution: ${analysis.mainObjective}
-//
-// Approach:
-${analysis.suggestedApproach}
-//
-// TODO: Implement solution`;
-  }
-
-  // Helper methods
-  toPascalCase(str) {
-    return str
-      .split(/[-_\s]+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join('');
-  }
-
-  toCamelCase(str) {
-    const pascal = this.toPascalCase(str);
-    return pascal.charAt(0).toLowerCase() + pascal.slice(1);
-  }
-
-  extractResourceName(text) {
-    const words = text.split(/\s+/);
-    return words[0]?.toLowerCase() || 'resource';
   }
 
   detectLanguage(fileName) {
@@ -381,8 +131,12 @@ ${analysis.suggestedApproach}
     if (fileName.endsWith('.js')) return 'javascript';
     if (fileName.endsWith('.ts')) return 'typescript';
     if (fileName.endsWith('.tsx')) return 'tsx';
+    if (fileName.endsWith('.py')) return 'python';
+    if (fileName.endsWith('.rs')) return 'rust';
+    if (fileName.endsWith('.go')) return 'go';
     return 'javascript';
   }
 }
 
 module.exports = { CodeGeneratorEngine };
+

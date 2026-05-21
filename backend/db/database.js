@@ -157,6 +157,26 @@ async function initDB() {
   } catch (_) {
     // Column already exists — ignore
   }
+
+  // Migrate: add updated_at column if missing
+  try {
+    await run(`ALTER TABLE jobs ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP`);
+  } catch (_) {
+    // Column already exists — ignore
+  }
+
+  // Backfill: fix missing submitted_at for already submitted jobs
+  try {
+    await run(`
+      UPDATE jobs SET submitted_at = bid_placed_at
+      WHERE submitted_at IS NULL
+      AND status IN ('SUBMITTED', 'SIMULATED_SUBMITTED')
+      AND bid_placed_at IS NOT NULL
+    `);
+    console.log('✅ Backfilled missing submitted_at timestamps');
+  } catch (err) {
+    console.error('⚠️ Failed to backfill submitted_at:', err.message);
+  }
 }
 
 module.exports = { initDB, run, all, get, getDB };

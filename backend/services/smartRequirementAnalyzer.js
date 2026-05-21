@@ -16,8 +16,12 @@ class SmartRequirementAnalyzer {
         difficulty: 'medium',
       },
       'documentation': {
-        keywords: ['document', 'readme', 'guide', 'tutorial', 'comment', 'explain'],
+        keywords: ['document', 'readme', 'guide', 'tutorial', 'comment', 'explain', 'translation', 'i18n', 'localization', 'translate', 'vietnamese', 'language'],
         difficulty: 'easy',
+      },
+      'ui_design': {
+        keywords: ['ui', 'ux', 'design', 'frontend', 'css', 'tailwind', 'style', 'component', 'animation', 'responsive', 'dark mode', 'framer motion', 'glassmorphism'],
+        difficulty: 'medium',
       },
       'test': {
         keywords: ['test', 'unit test', 'integration test', 'e2e', 'coverage'],

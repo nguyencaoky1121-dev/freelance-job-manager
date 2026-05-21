@@ -183,22 +183,44 @@ class WorkExecutor {
   }
 
   /**
-   * Run tests (simulated for now)
+   * Run real tests and build checks in the repo
    */
   runTests(repoDir) {
     try {
-      console.log(`🧪 Running tests in ${repoDir}...`);
+      console.log(`🧪 Running real verification in ${repoDir}...`);
+
+      const hasPackageJson = fs.existsSync(path.join(repoDir, 'package.json'));
+
+      if (hasPackageJson) {
+        console.log('   📦 Found package.json, running npm install...');
+        execSync('npm install --no-audit --no-fund', { cwd: repoDir, stdio: 'pipe', timeout: 300000 });
+
+        // Check for build errors if build script exists
+        const pkg = JSON.parse(fs.readFileSync(path.join(repoDir, 'package.json'), 'utf8'));
+        if (pkg.scripts && pkg.scripts.build) {
+          console.log('   🏗️  Running build check...');
+          execSync('npm run build', { cwd: repoDir, stdio: 'pipe', timeout: 300000 });
+        }
+
+        // Run tests if test script exists
+        if (pkg.scripts && pkg.scripts.test && pkg.scripts.test !== 'echo "Error: no test specified" && exit 1') {
+          console.log('   🧪 Running npm test...');
+          execSync('npm test', { cwd: repoDir, stdio: 'pipe', timeout: 300000 });
+        }
+      }
+
       return {
         success: true,
-        output: 'Simulated tests passed',
+        output: 'Verification passed',
         passed: true,
       };
     } catch (err) {
-      console.error('⚠️ Tests failed:', err.message);
+      const output = err.stdout?.toString() || err.stderr?.toString() || err.message;
+      console.error('⚠️ Verification failed:', output);
       return {
         success: false,
         error: err.message,
-        output: err.stdout || '',
+        output: output,
         passed: false,
       };
     }
