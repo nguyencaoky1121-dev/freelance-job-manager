@@ -96,6 +96,7 @@ class WorkExecutor {
 
       // Use oauth2 token for HTTPS authentication
       const cloneUrl = `https://oauth2:${token}@github.com/${owner}/${repo}.git`;
+      console.log(`  🔗 Clone URL (authenticated): https://github.com/${owner}/${repo}.git`);
 
       // Retry clone up to 5 times instead of 3, and increase backoff time
       const MAX_RETRIES = 5;
@@ -286,6 +287,7 @@ class WorkExecutor {
           try {
             console.log(`  🚀 Push attempt ${attempt}/${PUSH_MAX_RETRIES}...`);
             runGit(`push -f origin ${branchName}`, repoDir, 300000); // 5 min timeout
+            console.log(`  ✅ Push successful on attempt ${attempt}`);
             return { success: true, message: `Branch ${branchName} pushed` };
           } catch (pushErr) {
             pushLastErr = pushErr;
