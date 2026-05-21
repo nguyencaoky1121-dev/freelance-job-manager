@@ -20,6 +20,7 @@ class InternalAutoWorkPipeline {
   async analyzeAndDecide(bounty) {
     try {
       console.log(`\n📊 Analyzing bounty: ${bounty.title}`);
+      if (global.sysLog) global.sysLog(`🔍 Đang phân tích yêu cầu: ${bounty.title}`, 'AUTOWORK_INFO');
 
       const analysis = this.analyzer.analyze(
         bounty.title,
@@ -33,6 +34,14 @@ class InternalAutoWorkPipeline {
 
       const shouldAccept = this.analyzer.shouldAccept(analysis, userSkills);
 
+      // Auto-accept for low budget bounties even if skills match is borderline
+      let finalShouldAccept = shouldAccept;
+      if (bounty.budget > 0 && bounty.budget <= 100 && analysis.confidence > 0.3) {
+        finalShouldAccept = true;
+        analysis.autoAccepted = true;
+        analysis.autoAcceptReason = 'Tự động chấp nhận Bounty dưới $100';
+      }
+
       console.log(`
 ✅ Analysis Complete:
   - Task Type: ${analysis.taskType}
@@ -41,16 +50,25 @@ class InternalAutoWorkPipeline {
   - Est. Hours: ${analysis.estimatedHours}h
   - Required Skills: ${analysis.requiredSkills.join(', ')}
   - Confidence: ${(analysis.confidence * 100).toFixed(0)}%
-  - Decision: ${shouldAccept ? '✅ ACCEPT' : '❌ SKIP'}
+  - Decision: ${finalShouldAccept ? '✅ ACCEPT' : '❌ SKIP'}
       `);
 
+      if (global.sysLog) {
+        if (finalShouldAccept) {
+          global.sysLog(`✅ Chấp nhận: ${analysis.taskType} (${analysis.complexity}) - Độ tin cậy: ${(analysis.confidence * 100).toFixed(0)}%`, 'AUTOWORK_INFO');
+        } else {
+          global.sysLog(`⏭️ Bỏ qua: ${bounty.title} (Không phù hợp kỹ năng hoặc quá phức tạp)`, 'AUTOWORK_INFO');
+        }
+      }
+
       return {
-        shouldAccept,
+        shouldAccept: finalShouldAccept,
         analysis,
-        reason: shouldAccept ? 'Good fit' : 'Does not meet criteria',
+        reason: finalShouldAccept ? 'Good fit' : 'Does not meet criteria',
       };
     } catch (err) {
       console.error('❌ Error analyzing bounty:', err.message);
+      if (global.sysLog) global.sysLog(`❌ Lỗi phân tích: ${err.message}`, 'AUTOWORK_ERROR');
       return { shouldAccept: false, reason: err.message };
     }
   }
@@ -61,6 +79,7 @@ class InternalAutoWorkPipeline {
   async acceptBounty(bounty, analysis) {
     try {
       console.log(`\n✅ Accepting bounty: ${bounty.title}`);
+      if (global.sysLog) global.sysLog(`🤝 Đang gửi bình luận nhận việc cho: ${bounty.title}`, 'AUTOWORK_INFO');
 
       if (!bounty.project_url) {
         return { success: false, error: 'No project URL' };
@@ -94,7 +113,11 @@ I'll start working on this right away and will submit a PR with a complete solut
       );
 
       if (!commentResult.success) {
-        return { success: false, error: commentResult.error };
+        if (global.sysLog) global.sysLog(`⚠️ Lỗi gửi comment (có thể đã gửi trước đó): ${commentResult.error}`, 'AUTOWORK_WARNING');
+        // Vẫn tiếp tục nếu lỗi chỉ là do comment trùng
+        if (!commentResult.error.includes('already exists')) {
+           return { success: false, error: commentResult.error };
+        }
       }
 
       await run(
@@ -103,9 +126,11 @@ I'll start working on this right away and will submit a PR with a complete solut
       );
 
       console.log('✅ Bounty accepted and comment posted');
+      if (global.sysLog) global.sysLog(`🚀 Đã nhận việc và để lại lời nhắn thành công`, 'AUTOWORK_SUCCESS');
       return { success: true };
     } catch (err) {
       console.error('❌ Error accepting bounty:', err.message);
+      if (global.sysLog) global.sysLog(`❌ Lỗi nhận việc: ${err.message}`, 'AUTOWORK_ERROR');
       return { success: false, error: err.message };
     }
   }
@@ -116,13 +141,18 @@ I'll start working on this right away and will submit a PR with a complete solut
   async generateSolution(bounty, analysis) {
     try {
       console.log(`\n🔧 Generating solution for: ${bounty.title}`);
+      if (global.sysLog) global.sysLog(`🤖 Đang sử dụng AI để lập trình giải pháp cho: ${bounty.title}`, 'AUTOWORK_START');
 
-      const codeResult = this.codeGenerator.generateCode(
+      const codeResult = await this.codeGenerator.generateCode(
         analysis,
         bounty.description
       );
 
       console.log(`✅ Solution generated: ${codeResult.fileName}`);
+      if (global.sysLog) {
+        const aiBadge = codeResult.isAI ? 'Gemini AI' : 'Template';
+        global.sysLog(`✨ Đã tạo code xong (${aiBadge}): ${codeResult.fileName}`, 'AUTOWORK_SUCCESS');
+      }
       return {
         success: true,
         code: codeResult.code,
@@ -131,6 +161,7 @@ I'll start working on this right away and will submit a PR with a complete solut
       };
     } catch (err) {
       console.error('❌ Error generating solution:', err.message);
+      if (global.sysLog) global.sysLog(`❌ Lỗi tạo code: ${err.message}`, 'AUTOWORK_ERROR');
       return { success: false, error: err.message };
     }
   }
@@ -141,6 +172,7 @@ I'll start working on this right away and will submit a PR with a complete solut
   async executeWork(bounty, solution, analysis) {
     try {
       console.log(`\n⚙️ Executing work for: ${bounty.title}`);
+      if (global.sysLog) global.sysLog(`⚙️ Đang thực thi Git Workflow (Clone -> Commit -> Push -> PR)`, 'AUTOWORK_INFO');
 
       if (!bounty.project_url) {
         return { success: false, error: 'No project URL' };
@@ -149,7 +181,7 @@ I'll start working on this right away and will submit a PR with a complete solut
       const urlParts = bounty.project_url.split('/');
       const owner = urlParts[3];
       const repo = urlParts[4];
-      const branchName = `fix/${bounty.id.substring(0, 8)}`;
+      const branchName = `fix/${bounty.id.substring(0, 8)}_${Date.now()}`;
 
       const filePath = analysis.filesThatNeedChanges?.[0] || 'solution.js';
 
@@ -164,14 +196,17 @@ I'll start working on this right away and will submit a PR with a complete solut
           commitMessage: `Fix: ${bounty.title}`,
         },
         `[AUTO] ${bounty.title}`,
-        `Auto-generated solution for: ${bounty.title}\n\nTask Type: ${analysis.taskType}\nComplexity: ${analysis.complexity}`
+        `Auto-generated solution for: ${bounty.title}\n\nTask Type: ${analysis.taskType}\nComplexity: ${analysis.complexity}\n\nGenerated by internal AI pipeline.`
       );
 
       if (!workResult.success) {
+        if (global.sysLog) global.sysLog(`❌ Lỗi thực thi Git: ${workResult.error}`, 'AUTOWORK_ERROR');
         return { success: false, error: workResult.error };
       }
 
       console.log(`✅ Work executed. PR: ${workResult.prUrl}`);
+      if (global.sysLog) global.sysLog(`🏆 THÀNH CÔNG: Đã tạo Pull Request! Link: ${workResult.prUrl}`, 'AUTOWORK_SUCCESS');
+
       return {
         success: true,
         prUrl: workResult.prUrl,
@@ -180,6 +215,7 @@ I'll start working on this right away and will submit a PR with a complete solut
       };
     } catch (err) {
       console.error('❌ Error executing work:', err.message);
+      if (global.sysLog) global.sysLog(`❌ Lỗi execute: ${err.message}`, 'AUTOWORK_ERROR');
       return { success: false, error: err.message };
     }
   }
@@ -282,18 +318,30 @@ I'll start working on this right away and will submit a PR with a complete solut
       // PHASE 1: Accept
       const acceptResult = await this.acceptBounty(bounty, decision.analysis);
       if (!acceptResult.success) {
+        await run(
+          'UPDATE jobs SET status = ?, logs = ? WHERE id = ?',
+          ['FAILED', `Acceptance error: ${acceptResult.error}`, bounty.id]
+        );
         return { bountyId: bounty.id, status: 'failed', error: acceptResult.error };
       }
 
       // PHASE 1: Generate
       const solutionResult = await this.generateSolution(bounty, decision.analysis);
       if (!solutionResult.success) {
+        await run(
+          'UPDATE jobs SET status = ?, logs = ? WHERE id = ?',
+          ['FAILED', `Code generation error: ${solutionResult.error}`, bounty.id]
+        );
         return { bountyId: bounty.id, status: 'failed', error: solutionResult.error };
       }
 
       // PHASE 1: Execute
       const workResult = await this.executeWork(bounty, solutionResult, decision.analysis);
       if (!workResult.success) {
+        await run(
+          'UPDATE jobs SET status = ?, logs = ? WHERE id = ?',
+          ['FAILED', `Execution error: ${workResult.error}`, bounty.id]
+        );
         return { bountyId: bounty.id, status: 'failed', error: workResult.error };
       }
 
@@ -303,8 +351,8 @@ I'll start working on this right away and will submit a PR with a complete solut
       const repo = urlParts[4];
 
       await run(
-        'UPDATE jobs SET solution = ? WHERE id = ?',
-        [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), bounty.id]
+        'UPDATE jobs SET solution = ?, status = ?, submitted_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [JSON.stringify({ prUrl: workResult.prUrl, prNumber: workResult.prNumber }), 'SUBMITTED', bounty.id]
       );
 
       console.log(`\n✅ BOUNTY PROCESSING COMPLETE`);
@@ -335,6 +383,38 @@ I'll start working on this right away and will submit a PR with a complete solut
         duration: Date.now() - job.startTime,
       })),
     };
+  }
+
+  /**
+   * One-Shot Processing: Trigger pipeline for a specific job immediately
+   */
+  async postAttemptOnly(jobId) {
+    try {
+      console.log(`\n⚙️ Triggering One-Shot Processing for job: ${jobId}`);
+
+      // Fetch job details from DB
+      const job = await get('SELECT * FROM jobs WHERE id = ?', [jobId]);
+
+      if (!job) {
+        console.error(`❌ Job ${jobId} not found in database`);
+        return { success: false, error: 'Job not found' };
+      }
+
+      // Add to active jobs
+      this.activeJobs.set(jobId, { status: 'starting', startTime: Date.now() });
+
+      // Run processing
+      const result = await this.processSingleBounty(job);
+
+      // Remove from active jobs
+      this.activeJobs.delete(jobId);
+
+      return { success: true, result };
+    } catch (err) {
+      console.error(`❌ One-Shot processing failed for ${jobId}:`, err.message);
+      this.activeJobs.delete(jobId);
+      return { success: false, error: err.message };
+    }
   }
 }
 
